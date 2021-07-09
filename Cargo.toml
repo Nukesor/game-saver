@@ -1,0 +1,33 @@
+[package]
+name = "game-saver"
+description = "A tool to backup and restore game files."
+version = "0.1.0"
+authors = ["Arne Beer <contact@arne.beer>"]
+homepage = "https://github.com/nukesor/game-saver"
+repository = "https://github.com/nukesor/game-saver"
+license = "MIT"
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+watchexec = "1"
+
+better-panic = "0.2"
+anyhow = "1"
+chrono = { version = "0.4", features = ["serde"] }
+chrono-english = "0.1"
+
+clap = "3.0.0-beta.2"
+clap_generate = "3.0.0-beta.2"
+shell-escape = "0.1"
+tui = { version = "0.15", features = ["crossterm"] }
+log = "0.4"
+pretty_env_logger = "0.4"
+
+serde = "1"
+toml = "0.5"
+serde_derive = "1"
+
+[dev-dependencies]
+pretty_assertions = "0.7"
