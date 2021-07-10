@@ -3,7 +3,7 @@ use std::{path::PathBuf, thread};
 use anyhow::{Context, Result};
 use chrono::{DateTime, Local};
 use crossbeam_channel::Sender;
-use log::{debug, error, info};
+use log::{error, info};
 use watchexec::{
     config::{Config as WatchexecConfig, ConfigBuilder},
     error::Result as WatchexecResult,

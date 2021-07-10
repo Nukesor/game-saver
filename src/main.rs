@@ -8,6 +8,7 @@ use pretty_env_logger::formatted_builder;
 
 mod cli;
 mod config;
+mod tui;
 mod watcher;
 
 use config::Config;
@@ -25,6 +26,8 @@ fn main() -> Result<()> {
 
     info!("Spawning watchers");
     watcher::spawn_watchers(&config, &sender).context("Failed while spawning watchers")?;
+
+    tui::run_tui(&config)?;
 
     info!("All watchers are spawned, waiting for updates");
     loop {
