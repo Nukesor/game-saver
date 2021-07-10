@@ -12,6 +12,9 @@ edition = "2018"
 
 [dependencies]
 watchexec = "1"
+dirs = "3"
+crossbeam-channel = "0.5"
+shellexpand = "2"
 
 better-panic = "0.2"
 anyhow = "1"

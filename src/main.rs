@@ -1,25 +1,52 @@
+use std::{thread::sleep, time::Duration};
+
 use anyhow::{Context, Result};
 use clap::Clap;
-use log::LevelFilter;
+use crossbeam_channel::unbounded;
+use log::{debug, info, LevelFilter};
 use pretty_env_logger::formatted_builder;
-use watchexec::{
-    config::{Config, ConfigBuilder},
-    error::Result as WatchexecResult,
-    pathop::PathOp,
-    run::{watch, ExecHandler, Handler},
-};
 
 mod cli;
+mod config;
+mod watcher;
+
+use config::Config;
 
 fn main() -> Result<()> {
     // Parse commandline options.
     let opt = cli::CliArguments::parse();
-    init_app(opt.verbose);
+    init_app(opt.verbosity);
 
-    watcher()?;
-    Ok(())
+    let config = Config::new(&opt.config)?;
+
+    // Create the mpsc channel that's used to send notifications from the file watcher thread
+    // to the actual application loop.
+    let (sender, receiver) = unbounded();
+
+    info!("Spawning watchers");
+    watcher::spawn_watchers(&config, &sender).context("Failed while spawning watchers")?;
+
+    info!("All watchers are spawned, waiting for updates");
+    loop {
+        sleep(Duration::from_secs(1));
+        let updates = receiver.recv();
+
+        for update in updates {
+            ("Watchers spawned, waiting for updates");
+            debug!(
+                "{:?}: Detected changes for game {}",
+                update.time, update.game_name
+            );
+            for path in update.locations {
+                debug!("Change in path {:?}", path);
+            }
+
+            debug!("");
+        }
+    }
 }
 
+/// Run all boilerplate initialization code that's unrelated to actual application logic.
 fn init_app(verbosity: u8) {
     // Beautify panics for better debug output.
     better_panic::install();
@@ -33,35 +60,5 @@ fn init_app(verbosity: u8) {
     };
     let mut builder = formatted_builder();
     builder.filter(None, level).init();
-}
-
-fn watcher() -> Result<()> {
-    let config = ConfigBuilder::default()
-        .clear_screen(true)
-        .run_initially(true)
-        .paths(vec!["/home/nuke/temp".into()])
-        .cmd(vec!["ls".into()])
-        .build()?;
-
-    let handler = MyHandler(ExecHandler::new(config)?);
-    println!("ROFL");
-    watch(&handler).context("Handler failed")
-}
-
-struct MyHandler(ExecHandler);
-
-impl Handler for MyHandler {
-    fn args(&self) -> Config {
-        self.0.args()
-    }
-
-    fn on_manual(&self) -> WatchexecResult<bool> {
-        println!("Inital update");
-        Ok(true)
-    }
-
-    fn on_update(&self, ops: &[PathOp]) -> WatchexecResult<bool> {
-        println!("File updated: {:?}", ops);
-        Ok(true)
-    }
+    info!("Initialized logger with verbosity {}", level);
 }

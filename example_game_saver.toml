@@ -1,0 +1,7 @@
+backup_directory = "~/.local/share/game_saver/"
+
+[games.testing]
+savegame_location = "~/temp/"
+singular_save = true
+autosave = 5
+ignored_files = []
