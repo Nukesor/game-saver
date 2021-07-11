@@ -28,7 +28,7 @@ fn main() -> Result<()> {
     info!("Spawning watchers");
     watcher::spawn_watchers(&config, &sender).context("Failed while spawning watchers")?;
 
-    ui::run_tui(&config)?;
+    ui::run_app(&config)?;
 
     info!("All watchers are spawned, waiting for updates");
     loop {

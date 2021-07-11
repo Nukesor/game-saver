@@ -12,27 +12,27 @@ use helper::list::StatefulList;
 
 /// This struct holds the state for the tui-rs interface.
 /// This includes, lists, selected items as well as temporary input elements.
-pub struct App {
+pub struct AppState {
     config: Config,
     items: StatefulList,
 }
 
-impl App {
-    fn new(config: &Config) -> App {
+impl AppState {
+    fn new(config: &Config) -> AppState {
         let mut items = vec![];
         for (name, _) in &config.games {
             items.push(name.clone());
         }
-        App {
+        AppState {
             config: config.clone(),
             items: StatefulList::with_items(items),
         }
     }
 }
 
-pub fn run_tui(config: &Config) -> Result<()> {
+pub fn run_app(config: &Config) -> Result<()> {
     // Create a new app with some example state
-    let mut app = App::new(config);
+    let mut app = AppState::new(config);
 
     let mut terminal = helper::terminal::init_terminal()?;
 
