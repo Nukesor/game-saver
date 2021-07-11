@@ -1,11 +1,9 @@
-use std::time::Duration;
-
 use anyhow::{Context, Result};
 use crossbeam_channel::Receiver;
-use crossterm::event::{poll, read, Event, KeyCode};
 use log::debug;
 
 mod draw;
+mod events;
 mod helper;
 mod state;
 
@@ -36,28 +34,11 @@ pub fn run(config: Config, receiver: Receiver<Update>) -> Result<()> {
 
     loop {
         let mut draw_scheduled = false;
-        // This is a simple example on how to handle events
-        if poll(Duration::from_millis(100))? {
-            match read()? {
-                Event::Key(event) => match event.code {
-                    KeyCode::Char('q') => {
-                        helper::terminal::restore_terminal(terminal)?;
-                        break;
-                    }
-                    KeyCode::Left | KeyCode::Char('h') => {}
-                    KeyCode::Right | KeyCode::Char('l') => {}
-                    KeyCode::Down | KeyCode::Char('j') => {
-                        state.games.next();
-                        draw_scheduled = true;
-                    }
-                    KeyCode::Up | KeyCode::Char('k') => {
-                        state.games.previous();
-                        draw_scheduled = true;
-                    }
-                    _ => {}
-                },
-                _ => {}
-            }
+
+        match events::handle_events(&mut terminal, &mut state)? {
+            events::EventResult::Redraw => draw_scheduled = true,
+            events::EventResult::Quit => break,
+            _ => (),
         }
 
         // Go through all updates for changed files.

@@ -19,6 +19,19 @@ impl StatefulList {
         list
     }
 
+    /// Respect any previous state, as long as it's valid.
+    /// Otherwise autoselect the first entry if possible.
+    pub fn focus(&mut self) {
+        // Don't change state, if it's valid
+        if let Some(selected) = self.state.selected() {
+            if self.items.len() >= selected + 1 {
+                return;
+            }
+        }
+
+        self.autoselect_first()
+    }
+
     /// Autoselect the first entry if possible.
     pub fn autoselect_first(&mut self) {
         if self.items.len() > 0 {

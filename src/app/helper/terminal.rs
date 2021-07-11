@@ -22,7 +22,7 @@ pub fn init_terminal() -> Result<Terminal> {
 }
 
 /// Restore the terminal to its previous "normal" state.
-pub fn restore_terminal(mut terminal: Terminal) -> Result<()> {
+pub fn restore_terminal(terminal: &mut Terminal) -> Result<()> {
     disable_raw_mode()?;
     execute!(
         terminal.backend_mut(),
