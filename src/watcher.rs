@@ -13,19 +13,23 @@ use watchexec::{
 
 use crate::config::{Config, GameConfig};
 
+/// This is th message that will be send via the mpsc channel as soon as files change.
 pub struct Update {
     pub game_name: String,
     pub locations: Vec<PathBuf>,
     pub time: DateTime<Local>,
 }
 
-struct MyHandler {
+/// The handler that will watches files and notifies our main app as soon they change.
+///
+/// These run in their own threads. The threads are spawned in [spawn_watcher].
+struct Notifier {
     pub game_name: String,
     config: WatchexecConfig,
     sender: Sender<Update>,
 }
 
-impl Handler for MyHandler {
+impl Handler for Notifier {
     fn args(&self) -> WatchexecConfig {
         self.config.clone()
     }
@@ -67,7 +71,7 @@ fn spawn_watcher(game_name: &str, game_config: &GameConfig, sender: &Sender<Upda
         .cmd(vec!["stub_cmd".to_string()])
         .build()?;
 
-    let handler = MyHandler {
+    let handler = Notifier {
         config,
         game_name: game_name.into(),
         sender: sender.clone(),

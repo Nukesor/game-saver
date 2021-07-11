@@ -24,6 +24,7 @@ fn main() -> Result<()> {
     // to the actual application loop.
     let (sender, receiver) = unbounded();
 
+    // Spawn all file-change watchers.
     info!("Spawning watchers");
     watcher::spawn_watchers(&config, &sender).context("Failed while spawning watchers")?;
 

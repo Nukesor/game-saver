@@ -6,6 +6,9 @@ use tui::widgets::{Block, Borders, List, ListItem};
 use super::helper::terminal::Terminal;
 use super::App;
 
+/// Draw the terminal ui.
+/// This function doesn't change any state. Its sole purpose is to take the current state and
+/// render the terminal ui epending on the app state.
 pub fn draw_ui(terminal: &mut Terminal, app: &mut App) -> Result<()> {
     terminal.draw(|f| {
         // Create two chunks with equal horizontal screen space

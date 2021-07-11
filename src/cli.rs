@@ -15,5 +15,7 @@ pub struct CliArguments {
     pub verbosity: u8,
 
     #[clap(short, long)]
+    /// You can explicitly specify a configuration path.
+    /// Otherwise the default path in "~/.local/share" will be used.
     pub config: Option<PathBuf>,
 }
