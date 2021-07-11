@@ -17,16 +17,16 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
             .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
             .split(f.size());
 
-        // Iterate through all elements in the `items` app and append some debug text to it.
-        let items: Vec<ListItem> = state
-            .items
+        // Create the game selection.
+        let games: Vec<ListItem> = state
+            .games
             .items
             .iter()
             .map(|name| ListItem::new(name.clone()))
             .collect();
 
         // Create a List from all list items and highlight the currently selected one
-        let items = List::new(items)
+        let games = List::new(games)
             .block(Block::default().borders(Borders::ALL).title("List"))
             .highlight_style(
                 Style::default()
@@ -35,8 +35,8 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
             )
             .highlight_symbol(">> ");
 
-        // We can now render the item list
-        f.render_stateful_widget(items, chunks[0], &mut state.items.state);
+        // Render the game list
+        f.render_stateful_widget(games, chunks[0], &mut state.games.state);
     })?;
 
     Ok(())

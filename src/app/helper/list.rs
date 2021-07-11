@@ -14,12 +14,20 @@ impl StatefulList {
             state: ListState::default(),
             items: items.iter().map(|item| item.to_string()).collect(),
         };
-        // Select the first element by default.
-        if list.items.len() > 0 {
-            list.state.select(Some(0));
-        }
+        list.autoselect_first();
 
         list
+    }
+
+    /// Autoselect the first entry if possible.
+    pub fn autoselect_first(&mut self) {
+        if self.items.len() > 0 {
+            // Select the first element, if there are any elements
+            self.state.select(Some(0))
+        } else {
+            // Remove selection, if no elements exist.
+            self.state.select(None)
+        }
     }
 
     /// Select the next item in the list.
