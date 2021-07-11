@@ -9,7 +9,7 @@ use super::AppState;
 /// Draw the terminal ui.
 /// This function doesn't change any state. Its sole purpose is to take the current state and
 /// render the terminal ui epending on the app state.
-pub fn draw_ui(terminal: &mut Terminal, app: &mut AppState) -> Result<()> {
+pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
     terminal.draw(|f| {
         // Create two chunks with equal horizontal screen space
         let chunks = Layout::default()
@@ -18,7 +18,7 @@ pub fn draw_ui(terminal: &mut Terminal, app: &mut AppState) -> Result<()> {
             .split(f.size());
 
         // Iterate through all elements in the `items` app and append some debug text to it.
-        let items: Vec<ListItem> = app
+        let items: Vec<ListItem> = state
             .items
             .items
             .iter()
@@ -36,7 +36,7 @@ pub fn draw_ui(terminal: &mut Terminal, app: &mut AppState) -> Result<()> {
             .highlight_symbol(">> ");
 
         // We can now render the item list
-        f.render_stateful_widget(items, chunks[0], &mut app.items.state);
+        f.render_stateful_widget(items, chunks[0], &mut state.items.state);
     })?;
 
     Ok(())

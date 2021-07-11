@@ -1,14 +1,12 @@
-use std::{thread::sleep, time::Duration};
-
 use anyhow::{Context, Result};
 use clap::Clap;
 use crossbeam_channel::unbounded;
-use log::{debug, info, LevelFilter};
+use log::{info, LevelFilter};
 use pretty_env_logger::formatted_builder;
 
+mod app;
 mod cli;
 mod config;
-mod ui;
 mod watcher;
 
 use config::Config;
@@ -27,27 +25,12 @@ fn main() -> Result<()> {
     // Spawn all file-change watchers.
     info!("Spawning watchers");
     watcher::spawn_watchers(&config, &sender).context("Failed while spawning watchers")?;
+    info!("All watchers have been spawned, waiting for updates");
 
-    ui::run_app(&config)?;
+    // Run the actual main app.
+    app::run(config, receiver)?;
 
-    info!("All watchers are spawned, waiting for updates");
-    loop {
-        sleep(Duration::from_secs(1));
-        let updates = receiver.recv();
-
-        for update in updates {
-            ("Watchers spawned, waiting for updates");
-            debug!(
-                "{:?}: Detected changes for game {}",
-                update.time, update.game_name
-            );
-            for path in update.locations {
-                debug!("Change in path {:?}", path);
-            }
-
-            debug!("");
-        }
-    }
+    Ok(())
 }
 
 /// Run all boilerplate initialization code that's unrelated to actual application logic.
