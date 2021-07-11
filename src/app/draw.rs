@@ -1,43 +1,82 @@
-use anyhow::Result;
-use tui::layout::{Constraint, Direction, Layout};
-use tui::style::{Color, Modifier, Style};
-use tui::widgets::{Block, Borders, List, ListItem};
+use std::io::Stdout;
 
+use anyhow::Result;
+use tui::backend::CrosstermBackend;
+use tui::layout::{Constraint, Direction, Layout, Rect};
+use tui::style::{Color, Modifier, Style};
+use tui::text::Text;
+use tui::widgets::{Block, Borders, List, ListItem, Paragraph};
+use tui::Frame as TuiFrame;
+
+use super::helper::list::StatefulList;
 use super::helper::terminal::Terminal;
 use super::AppState;
+
+type Frame<'backend> = TuiFrame<'backend, CrosstermBackend<Stdout>>;
 
 /// Draw the terminal ui.
 /// This function doesn't change any state. Its sole purpose is to take the current state and
 /// render the terminal ui epending on the app state.
 pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
-    terminal.draw(|f| {
-        // Create two chunks with equal horizontal screen space
-        let chunks = Layout::default()
+    terminal.draw(|frame| {
+        // Create two horizontally split chunks with 1/3 to 2/3
+        // The left chunk will be the list of games
+        // The right chunk will be used to display save games
+        let main_chunks = Layout::default()
             .direction(Direction::Horizontal)
-            .constraints([Constraint::Percentage(50), Constraint::Percentage(50)].as_ref())
-            .split(f.size());
+            .constraints([Constraint::Ratio(1, 3), Constraint::Ratio(2, 3)].as_ref())
+            .split(frame.size());
 
-        // Create the game selection.
-        let games: Vec<ListItem> = state
-            .games
-            .items
-            .iter()
-            .map(|name| ListItem::new(name.clone()))
-            .collect();
+        // Draw the list of games
+        draw_list(frame, main_chunks[0], &mut state.games, "Games");
 
-        // Create a List from all list items and highlight the currently selected one
-        let games = List::new(games)
-            .block(Block::default().borders(Borders::ALL).title("List"))
-            .highlight_style(
-                Style::default()
-                    .bg(Color::LightGreen)
-                    .add_modifier(Modifier::BOLD),
+        // Split the right side into three chunks
+        // - Autosave list
+        // - Normal save list
+        // - Block that's used as input field.
+        let right_chunks = Layout::default()
+            .constraints(
+                [
+                    Constraint::Ratio(1, 3),
+                    Constraint::Min(4),
+                    Constraint::Length(3),
+                ]
+                .as_ref(),
             )
-            .highlight_symbol(">> ");
+            .split(main_chunks[1]);
 
-        // Render the game list
-        f.render_stateful_widget(games, chunks[0], &mut state.games.state);
+        // Draw the save lists
+        draw_list(frame, right_chunks[0], &mut state.autosaves, "Autosaves");
+        draw_list(frame, right_chunks[1], &mut state.manual_saves, "Saves");
+
+        // Draw the input field
+        let paragraph = Paragraph::new(Text::from(state.input.clone()))
+            .block(Block::default().borders(Borders::ALL).title("Input"));
+        frame.render_widget(paragraph, right_chunks[2]);
     })?;
 
     Ok(())
+}
+
+fn draw_list(frame: &mut Frame, chunk: Rect, stateful_list: &mut StatefulList, title: &str) {
+    // Create the game selection.
+    let items: Vec<ListItem> = stateful_list
+        .items
+        .iter()
+        .map(|name| ListItem::new(name.clone()))
+        .collect();
+
+    // Create a List from all list items and highlight the currently selected one
+    let list = List::new(items)
+        .block(Block::default().borders(Borders::ALL).title(title))
+        .highlight_style(
+            Style::default()
+                .fg(Color::White)
+                .bg(Color::DarkGray)
+                .add_modifier(Modifier::BOLD),
+        )
+        .highlight_symbol(">> ");
+
+    // Render the list
+    frame.render_stateful_widget(list, chunk, &mut stateful_list.state);
 }

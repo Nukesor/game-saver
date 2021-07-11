@@ -3,6 +3,7 @@ use std::time::Duration;
 use anyhow::{Context, Result};
 use crossbeam_channel::Receiver;
 use crossterm::event::{poll, read, Event, KeyCode};
+use log::debug;
 
 mod draw;
 mod helper;
@@ -20,10 +21,12 @@ use crate::watcher::Update;
 /// - Initialize terminal
 /// - Enter the Event->Update->Draw loop
 pub fn run(config: Config, receiver: Receiver<Update>) -> Result<()> {
+    debug!("Initializing directories");
+    init_directories(&config).context("Failed while initializing directories")?;
     // Create a new app with some example state
     let mut state = AppState::new(&config)?;
-    init_directories(&config).context("Failed while initializing directories")?;
 
+    debug!("Initializing terminal");
     let mut terminal = helper::terminal::init_terminal()?;
 
     // One initial clear and draw
@@ -57,8 +60,8 @@ pub fn run(config: Config, receiver: Receiver<Update>) -> Result<()> {
             }
         }
 
-        let updates = receiver.recv();
-        for update in updates {}
+        // Go through all updates for changed files.
+        while let Ok(update) = receiver.try_recv() {}
 
         // Draw at the end of the loop after everything has been processed.
         // Only refresh the screen, if we have to.
