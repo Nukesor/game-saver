@@ -10,7 +10,7 @@ use chrono::Local;
 use super::helper::files::{get_archive_files, SaveFile};
 use crate::config::Config;
 
-/// A wrapper around [save_game], which handles the cycling of autosaves
+/// A wrapper around [save_game], which handles the cycling of autosaves.
 pub fn autosave_game(config: &Config, game: &str) -> Result<()> {
     let autosave_dir = config.autosave_dir(game);
     let game_config = config.games.get(game).unwrap();
@@ -39,6 +39,20 @@ pub fn autosave_game(config: &Config, game: &str) -> Result<()> {
     let autosave_path = autosave_dir.join(&file_name);
     save_game(&game_config.savegame_location(), &autosave_path)
         .context("Failed to create autosave")?;
+
+    Ok(())
+}
+
+/// A wrapper around [save_game], which handles manual saving of files.
+pub fn manually_save_game(config: &Config, game: &str, name: &str) -> Result<()> {
+    let save_dir = config.save_dir(game);
+    let game_config = config.games.get(game).unwrap();
+
+    let file_name = format!("{}.tar.zst", name);
+
+    let save_path = save_dir.join(&file_name);
+    save_game(&game_config.savegame_location(), &save_path)
+        .context("Failed to create manual save")?;
 
     Ok(())
 }

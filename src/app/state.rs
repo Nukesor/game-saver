@@ -117,7 +117,7 @@ impl AppState {
             return Ok(());
         }
 
-        let autosave_dir = self.config.backup_directory().join(name).join("autosaves");
+        let autosave_dir = self.config.autosave_dir(&name);
         let saves = get_archive_files(&autosave_dir)?;
 
         self.autosaves.items = saves;

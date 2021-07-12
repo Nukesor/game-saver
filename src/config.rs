@@ -90,12 +90,12 @@ impl Config {
     }
 
     /// Get the backup directory for a specific game.
-    pub fn game_dir(&self, name: &str) -> PathBuf {
+    pub fn save_dir(&self, name: &str) -> PathBuf {
         PathBuf::from(tilde(&self.backup_directory).into_owned()).join(name)
     }
 
     /// Get the autosave directory for a specific game.
     pub fn autosave_dir(&self, name: &str) -> PathBuf {
-        self.game_dir(name).join("autosaves")
+        self.save_dir(name).join("autosaves")
     }
 }

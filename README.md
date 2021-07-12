@@ -15,8 +15,9 @@ This tool is designed to extend a game's save logic and not to replace it.
 
 ### TODOS:
 
-- Add manual save
-- Investigate how prompts work
+- Build prompts work
+- Refactor everything once the MVP is finished
+- Delete saves
 - Show timestamp floating on the right of the savegame lists
 - Add switch for save-on-change and save-after-time.
     Right now we only have save-on-change.

@@ -3,7 +3,7 @@ use std::fs::{create_dir, create_dir_all, read_dir};
 use std::path::{Path, PathBuf};
 use std::time::UNIX_EPOCH;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Local, TimeZone};
 
 use crate::config::Config;
@@ -93,7 +93,16 @@ pub fn init_directories(config: &Config) -> Result<()> {
 
     // Create subfolders for each game
     for (name, game_config) in &config.games {
-        let game_backup_dir = config.game_dir(name);
+        let savegame_location = game_config.savegame_location();
+        if !savegame_location.exists() {
+            bail!(
+                "Cannot find savegame location for game {}: {:?}",
+                name,
+                savegame_location
+            );
+        }
+
+        let game_backup_dir = config.save_dir(name);
         if !game_backup_dir.exists() {
             create_dir(&game_backup_dir).context(format!(
                 "Failed to create backup directory for game {}",

@@ -7,6 +7,7 @@ use crossterm::event::{poll, read, Event, KeyCode, KeyEvent, KeyModifiers};
 use crate::app::saves::restore_save;
 
 use super::helper::terminal::{restore_terminal, Terminal};
+use super::saves::manually_save_game;
 use super::state::{AppState, UiState};
 
 /// This enum signals the parent function, which actions should be taken.
@@ -38,6 +39,10 @@ fn handle_key(
     terminal: &mut Terminal,
     state: &mut AppState,
 ) -> Result<EventResult> {
+    if matches!(state.state, UiState::Input) {
+        return handle_input(event, state);
+    }
+
     if event.modifiers.contains(KeyModifiers::CONTROL) {
         return handle_control(event, terminal, state);
     }
@@ -47,8 +52,16 @@ fn handle_key(
             restore_terminal(terminal)?;
             return Ok(EventResult::Quit);
         }
+        KeyCode::Char('a') => {
+            if state.get_selected_game().is_some() {
+                // Create a new savegame for the current game.
+                state.state = UiState::Input;
+                state.input = String::new();
+                return Ok(EventResult::Redraw);
+            }
+        }
         KeyCode::Down | KeyCode::Char('j') => {
-            // Navigate to the next item of the focused list
+            // Navigate to the next item of the focused list.
             match state.state {
                 UiState::Games => {
                     state.games.next();
@@ -61,7 +74,7 @@ fn handle_key(
             return Ok(EventResult::Redraw);
         }
         KeyCode::Up | KeyCode::Char('k') => {
-            // Navigate to the previous item of the focused list
+            // Navigate to the previous item of the focused list.
             match state.state {
                 UiState::Games => {
                     state.games.previous();
@@ -74,7 +87,7 @@ fn handle_key(
             return Ok(EventResult::Redraw);
         }
         KeyCode::Enter => {
-            // Restore a savegame
+            // Restore a savegame.
             if matches!(state.state, UiState::Autosave) {
                 if let Some(save) = state.autosaves.get_selected() {
                     if let Some(game_name) = state.get_selected_game() {
@@ -95,13 +108,50 @@ fn handle_key(
                         restore_save(&state.config, &game_name, &save)?;
                         state.ignore_changes.insert(game_name.clone(), Local::now());
                         state.log(&format!(
-                            "Restored savefile {} for {}",
+                            "Restored savefile '{}' for {}",
                             save.file_name, game_name
                         ));
                         return Ok(EventResult::Redraw);
                     }
                 }
             }
+        }
+        _ => {}
+    }
+
+    Ok(EventResult::Ignore)
+}
+
+fn handle_input(event: &KeyEvent, state: &mut AppState) -> Result<EventResult> {
+    match event.code {
+        KeyCode::Esc => {
+            // Abort the savegame cration process
+            state.state = UiState::ManualSave;
+            state.input = String::new();
+            return Ok(EventResult::Redraw);
+        }
+        KeyCode::Enter => {
+            // Create a new save.
+            let game_name = state.get_selected_game().unwrap();
+            manually_save_game(&state.config, &game_name, &state.input)?;
+            state.log(&format!(
+                "New manual save for {} with name '{}'",
+                &game_name, &state.input
+            ));
+            state.state = UiState::ManualSave;
+            state.input = String::new();
+            state.update_manual_saves()?;
+            return Ok(EventResult::Redraw);
+        }
+        KeyCode::Backspace => {
+            // Remove a character from the name
+            state.input.pop();
+            return Ok(EventResult::Redraw);
+        }
+        KeyCode::Char(character) => {
+            // Add the character to the name
+            state.input.push(character);
+            return Ok(EventResult::Redraw);
         }
         _ => {}
     }

@@ -4,7 +4,8 @@ use anyhow::Result;
 use tui::backend::CrosstermBackend;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 use tui::style::{Color, Modifier, Style};
-use tui::widgets::{Block, Borders, List, ListItem};
+use tui::text::Text;
+use tui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph};
 use tui::Frame as TuiFrame;
 
 use crate::app::state::UiState;
@@ -63,10 +64,40 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
         );
         draw_list(frame, right_chunks[2], &state.event_log, "Event log");
 
-        // Draw the input field
-        //let paragraph = Paragraph::new(Text::from(state.input.clone()))
-        //    .block(Block::default().borders(Borders::ALL).title("Input"));
-        //frame.render_widget(paragraph, right_chunks[2]);
+        // Draw the input field in the middle of the screen, if we're expecting input
+        if matches!(state.state, UiState::Input) {
+            // Get the vertical middle of the screen.
+            let overlay_vertical = Layout::default()
+                .constraints(
+                    [
+                        Constraint::Percentage(45),
+                        Constraint::Length(3),
+                        Constraint::Percentage(50),
+                    ]
+                    .as_ref(),
+                )
+                .split(frame.size());
+
+            // Get the horizontal middle of the screen.
+            let overlay_horizontal = Layout::default()
+                .direction(Direction::Horizontal)
+                .constraints(
+                    [
+                        Constraint::Ratio(1, 8),
+                        Constraint::Ratio(3, 4),
+                        Constraint::Ratio(1, 8),
+                    ]
+                    .as_ref(),
+                )
+                .split(overlay_vertical[1]);
+
+            let paragraph = Paragraph::new(Text::from(state.input.clone()))
+                .block(Block::default().borders(Borders::ALL).title("Name"));
+
+            // Clear the input block and draw the input field
+            frame.render_widget(Clear, overlay_horizontal[1]);
+            frame.render_widget(paragraph, overlay_horizontal[1]);
+        }
     })?;
 
     Ok(())
