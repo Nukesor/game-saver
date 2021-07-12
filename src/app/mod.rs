@@ -109,7 +109,7 @@ fn handle_updates(state: &mut AppState, receiver: &Receiver<Update>) -> Result<b
         .collect();
     for game_name in watched_changes.iter() {
         let time = state.changes_detected.get(game_name).unwrap();
-        if (Local::now() - Duration::seconds(1)).gt(time) {
+        if (Local::now() - Duration::seconds(5)).gt(time) {
             // We can create the autosave.
             // Schedule a redraw and remove that update from our watchlist.
             autosave_game(&state.config, &game_name)?;
