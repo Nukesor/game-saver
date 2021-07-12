@@ -78,8 +78,13 @@ fn handle_key(
             if matches!(state.state, UiState::Autosave) {
                 if let Some(save) = state.autosaves.get_selected() {
                     if let Some(game_name) = state.get_selected_game() {
-                        restore_save(&state.config, &game_name, save)?;
-                        state.ignore_changes.insert(game_name, Local::now());
+                        restore_save(&state.config, &game_name, &save)?;
+                        state.ignore_changes.insert(game_name.clone(), Local::now());
+                        state.log(&format!(
+                            "Restored savefile {} for {}",
+                            save.file_name, game_name
+                        ));
+                        return Ok(EventResult::Redraw);
                     }
                 }
             }
@@ -87,8 +92,13 @@ fn handle_key(
             if matches!(state.state, UiState::ManualSave) {
                 if let Some(save) = state.manual_saves.get_selected() {
                     if let Some(game_name) = state.get_selected_game() {
-                        restore_save(&state.config, &game_name, save)?;
-                        state.ignore_changes.insert(game_name, Local::now());
+                        restore_save(&state.config, &game_name, &save)?;
+                        state.ignore_changes.insert(game_name.clone(), Local::now());
+                        state.log(&format!(
+                            "Restored savefile {} for {}",
+                            save.file_name, game_name
+                        ));
+                        return Ok(EventResult::Redraw);
                     }
                 }
             }

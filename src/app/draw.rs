@@ -4,8 +4,7 @@ use anyhow::Result;
 use tui::backend::CrosstermBackend;
 use tui::layout::{Constraint, Direction, Layout, Rect};
 use tui::style::{Color, Modifier, Style};
-use tui::text::Text;
-use tui::widgets::{Block, Borders, List, ListItem, Paragraph};
+use tui::widgets::{Block, Borders, List, ListItem};
 use tui::Frame as TuiFrame;
 
 use crate::app::state::UiState;
@@ -30,7 +29,7 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
             .split(frame.size());
 
         // Draw the list of games
-        draw_list(frame, main_chunks[0], &mut state.games, "Games", true);
+        draw_stateful_list(frame, main_chunks[0], &mut state.games, "Games", true);
 
         // Split the right side into three chunks
         // - Autosave list
@@ -40,8 +39,8 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
             .constraints(
                 [
                     Constraint::Ratio(1, 3),
-                    Constraint::Min(4),
-                    Constraint::Length(3),
+                    Constraint::Ratio(1, 3),
+                    Constraint::Ratio(1, 3),
                 ]
                 .as_ref(),
             )
@@ -62,17 +61,34 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
             "Saves",
             matches!(state.state, UiState::ManualSave),
         );
+        draw_list(frame, right_chunks[2], &state.event_log, "Event log");
 
         // Draw the input field
-        let paragraph = Paragraph::new(Text::from(state.input.clone()))
-            .block(Block::default().borders(Borders::ALL).title("Input"));
-        frame.render_widget(paragraph, right_chunks[2]);
+        //let paragraph = Paragraph::new(Text::from(state.input.clone()))
+        //    .block(Block::default().borders(Borders::ALL).title("Input"));
+        //frame.render_widget(paragraph, right_chunks[2]);
     })?;
 
     Ok(())
 }
 
-fn draw_list(
+fn draw_list(frame: &mut Frame, chunk: Rect, items: &Vec<String>, title: &str) {
+    // Create the game selection.
+    let items: Vec<ListItem> = items
+        .iter()
+        .map(|name| ListItem::new(name.clone()))
+        .collect();
+
+    // Create a List from all list items and highlight the currently selected one
+    let list = List::new(items)
+        .block(Block::default().borders(Borders::ALL).title(title))
+        .highlight_symbol(">> ");
+
+    // Render the list
+    frame.render_widget(list, chunk);
+}
+
+fn draw_stateful_list(
     frame: &mut Frame,
     chunk: Rect,
     stateful_list: &mut StatefulList,

@@ -113,6 +113,7 @@ fn handle_updates(state: &mut AppState, receiver: &Receiver<Update>) -> Result<b
             // We can create the autosave.
             // Schedule a redraw and remove that update from our watchlist.
             autosave_game(&state.config, &game_name)?;
+            state.log(&format!("Autosave created for {}", game_name));
             state.update_autosaves()?;
             draw_scheduled = true;
             state.changes_detected.remove(game_name);

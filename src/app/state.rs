@@ -23,6 +23,8 @@ pub struct AppState {
     pub games: StatefulList,
     pub autosaves: SaveList,
     pub manual_saves: SaveList,
+    /// This is a non-persisted event log, which is used to show the user performed actions.
+    pub event_log: Vec<String>,
     pub input: String,
     pub state: UiState,
     /// A local clone of the config for convenience purposes.
@@ -50,6 +52,7 @@ impl AppState {
             games: StatefulList::with_items(items),
             autosaves: SaveList::with_items(Vec::new()),
             manual_saves: SaveList::with_items(Vec::new()),
+            event_log: Vec::new(),
             input: String::new(),
             state: UiState::Games,
             config: config.clone(),
@@ -90,6 +93,11 @@ impl AppState {
         }
 
         false
+    }
+
+    pub fn log(&mut self, message: &str) {
+        let prefix = Local::now().format("%H:%M:%S").to_string();
+        self.event_log.push(format!("{} - {}", prefix, message));
     }
 
     /// Convenience wrapper, which calls [self.update_saves] and [self.update_autosaves].

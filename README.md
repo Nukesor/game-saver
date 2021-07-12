@@ -15,7 +15,6 @@ This tool is designed to extend a game's save logic and not to replace it.
 
 ### TODOS:
 
-- Add eventlog
 - Add manual save
 - Investigate how prompts work
 - Show timestamp floating on the right of the savegame lists

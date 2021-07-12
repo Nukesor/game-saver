@@ -101,9 +101,9 @@ impl SaveList {
     }
 
     /// If something is selected, return the selected item.
-    pub fn get_selected(&self) -> Option<&SaveFile> {
+    pub fn get_selected(&self) -> Option<SaveFile> {
         let selected = self.state.selected()?;
-        self.items.get(selected)
+        self.items.get(selected).cloned()
     }
 
     /// Autoselect the first entry if possible.
