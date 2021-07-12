@@ -1,7 +1,10 @@
 use std::time::Duration;
 
-use anyhow::{Context, Result};
+use anyhow::Result;
+use chrono::Local;
 use crossterm::event::{poll, read, Event, KeyCode, KeyEvent, KeyModifiers};
+
+use crate::app::saves::restore_save;
 
 use super::helper::terminal::{restore_terminal, Terminal};
 use super::state::{AppState, UiState};
@@ -47,7 +50,10 @@ fn handle_key(
         KeyCode::Down | KeyCode::Char('j') => {
             // Navigate to the next item of the focused list
             match state.state {
-                UiState::Games => state.games.next(),
+                UiState::Games => {
+                    state.games.next();
+                    state.update_saves()?;
+                }
                 UiState::Autosave => state.autosaves.next(),
                 UiState::ManualSave => state.manual_saves.next(),
                 _ => (),
@@ -57,12 +63,35 @@ fn handle_key(
         KeyCode::Up | KeyCode::Char('k') => {
             // Navigate to the previous item of the focused list
             match state.state {
-                UiState::Games => state.games.previous(),
+                UiState::Games => {
+                    state.games.previous();
+                    state.update_saves()?;
+                }
                 UiState::Autosave => state.autosaves.previous(),
                 UiState::ManualSave => state.manual_saves.previous(),
                 _ => (),
             }
             return Ok(EventResult::Redraw);
+        }
+        KeyCode::Enter => {
+            // Restore a savegame
+            if matches!(state.state, UiState::Autosave) {
+                if let Some(save) = state.autosaves.get_selected() {
+                    if let Some(game_name) = state.get_selected_game() {
+                        restore_save(&state.config, &game_name, save)?;
+                        state.ignore_changes.insert(game_name, Local::now());
+                    }
+                }
+            }
+
+            if matches!(state.state, UiState::ManualSave) {
+                if let Some(save) = state.manual_saves.get_selected() {
+                    if let Some(game_name) = state.get_selected_game() {
+                        restore_save(&state.config, &game_name, save)?;
+                        state.ignore_changes.insert(game_name, Local::now());
+                    }
+                }
+            }
         }
         _ => {}
     }

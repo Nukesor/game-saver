@@ -1,18 +1,38 @@
+use std::convert::TryInto;
 use std::fs::{create_dir, create_dir_all, read_dir};
 use std::path::{Path, PathBuf};
+use std::time::UNIX_EPOCH;
 
 use anyhow::{Context, Result};
+use chrono::{DateTime, Local, TimeZone};
 
 use crate::config::Config;
 
-/// Return all filenames of *.tar.zst files for a given directory.
-pub fn get_archive_files(path: &Path) -> Result<Vec<String>> {
+pub struct SaveFile {
+    pub path: PathBuf,
+    pub file_name: String,
+    pub created_at: DateTime<Local>,
+}
+
+/// Return all paths and filenames of *.tar.zst files for a given directory.
+/// The files are sorted by datetime.
+pub fn get_archive_files(path: &Path) -> Result<Vec<SaveFile>> {
     let mut files = Vec::new();
 
-    let dir_files = read_dir(path)?;
-    for file in dir_files {
-        let file = file?;
-        let path = file.path();
+    let dir_files = read_dir(path).context(format!("Couldn't read directory {:?}", path))?;
+    for dir_entry in dir_files {
+        let dir_entry = dir_entry.context(format!("Couldn't get dir entry in {:?}", path))?;
+        let path = dir_entry.path();
+
+        // Extract a DateTime<Local> from the file's creation date
+        let metadata = dir_entry
+            .metadata()
+            .context(format!("Couldn't read metadata of file {:?}", path))?;
+        let created_at = metadata
+            .created()
+            .context(format!("Couldn't read creation time of file {:?}", path))?;
+        let seconds = created_at.duration_since(UNIX_EPOCH)?.as_secs();
+        let created_at = Local.timestamp(seconds.try_into().unwrap_or(i64::MAX), 0);
 
         // It must be a file
         if !path.is_file() {
@@ -28,7 +48,7 @@ pub fn get_archive_files(path: &Path) -> Result<Vec<String>> {
             continue;
         };
 
-        // Get the inner filename (*.tar)
+        // Get the inner file_name (*.tar)
         let tar_name = if let Some(name) = path.file_stem() {
             PathBuf::from(name)
         } else {
@@ -44,15 +64,22 @@ pub fn get_archive_files(path: &Path) -> Result<Vec<String>> {
             continue;
         };
 
-        // Get the innermost filename without .tar.zst
-        let filename = if let Some(name) = path.file_stem() {
+        // Get the innermost file_name without .tar.zst
+        let file_name = if let Some(name) = tar_name.file_stem() {
             name.to_string_lossy().into_owned()
         } else {
             continue;
         };
 
-        files.push(filename);
+        files.push(SaveFile {
+            path,
+            file_name,
+            created_at,
+        });
     }
+
+    // Sort by descending order -> b.cmp(a)
+    files.sort_by(|a, b| b.created_at.cmp(&a.created_at));
 
     Ok(files)
 }
@@ -64,8 +91,8 @@ pub fn init_directories(config: &Config) -> Result<()> {
     create_dir_all(&backup_dir).context("Failed to create backup directory")?;
 
     // Create subfolders for each game
-    for (name, config) in &config.games {
-        let game_backup_dir = backup_dir.join(name);
+    for (name, game_config) in &config.games {
+        let game_backup_dir = config.game_dir(name);
         if !game_backup_dir.exists() {
             create_dir(&game_backup_dir).context(format!(
                 "Failed to create backup directory for game {}",
@@ -74,11 +101,11 @@ pub fn init_directories(config: &Config) -> Result<()> {
         }
 
         // Only create an autosave directory, if autosave is enabled for this game.
-        if config.autosave == 0 {
+        if game_config.autosave == 0 {
             continue;
         }
 
-        let autosave_dir = game_backup_dir.join("autosaves");
+        let autosave_dir = config.autosave_dir(name);
         if !autosave_dir.exists() {
             create_dir(autosave_dir).context(format!(
                 "Failed to create autosave directory for game {}",

@@ -1,7 +1,10 @@
+use std::collections::HashMap;
+
 use anyhow::{Context, Result};
+use chrono::{DateTime, Local};
 
 use super::helper::files::get_archive_files;
-use super::helper::list::StatefulList;
+use super::helper::list::{SaveList, StatefulList};
 use crate::config::Config;
 use crate::unwrap_or_ok;
 
@@ -18,28 +21,39 @@ pub enum UiState {
 /// This includes, lists, selected items as well as temporary input elements.
 pub struct AppState {
     pub games: StatefulList,
-    pub autosaves: StatefulList,
-    pub manual_saves: StatefulList,
+    pub autosaves: SaveList,
+    pub manual_saves: SaveList,
     pub input: String,
     pub state: UiState,
     /// A local clone of the config for convenience purposes.
-    config: Config,
+    pub config: Config,
+
+    /// This map is used to store games that recently changed on disk.
+    /// We perform changes once there haven't been any changes for some time.
+    /// That's why we have to cache this state for a little while.
+    pub changes_detected: HashMap<String, DateTime<Local>>,
+    /// This map is used to temporarily ignore changes on the filesystem.
+    /// This is needed so we don't trigger saves when restoring saves.
+    /// (As the restore is a change in the filesystem that get's detected).
+    pub ignore_changes: HashMap<String, DateTime<Local>>,
 }
 
 impl AppState {
     /// Create a new state with all games from the configuration file.
     pub fn new(config: &Config) -> Result<AppState> {
         let mut items = vec![];
-        for (name, _) in &config.games {
+        for name in config.games.keys() {
             items.push(name.clone());
         }
         let mut state = AppState {
             games: StatefulList::with_items(items),
-            autosaves: StatefulList::with_items::<String>(Vec::new()),
-            manual_saves: StatefulList::with_items::<String>(Vec::new()),
+            autosaves: SaveList::with_items(Vec::new()),
+            manual_saves: SaveList::with_items(Vec::new()),
             input: String::new(),
             state: UiState::Games,
             config: config.clone(),
+            changes_detected: HashMap::new(),
+            ignore_changes: HashMap::new(),
         };
         // Load the list of saves if we selected a game.
         state.update_saves()?;
@@ -51,7 +65,7 @@ impl AppState {
     }
 
     /// Return the name of the currently selected game.
-    fn get_selected_game(&self) -> Option<String> {
+    pub fn get_selected_game(&self) -> Option<String> {
         let selected = self.games.state.selected()?;
         let game = self
             .games
@@ -77,14 +91,8 @@ impl AppState {
         false
     }
 
-    /// Remove all list state from the savegame lists on the right
-    pub fn deselect_saves(&mut self) {
-        self.manual_saves.state.select(None);
-        self.autosaves.state.select(None);
-    }
-
     /// Convenience wrapper, which calls [self.update_saves] and [self.update_autosaves].
-    fn update_saves(&mut self) -> Result<()> {
+    pub fn update_saves(&mut self) -> Result<()> {
         self.update_autosaves()
             .context("Failed while updating autosaves")?;
         self.update_manual_saves()
@@ -92,7 +100,7 @@ impl AppState {
     }
 
     /// Update the list of saves that're currently in the autosave folder of the selected game.
-    fn update_autosaves(&mut self) -> Result<()> {
+    pub fn update_autosaves(&mut self) -> Result<()> {
         let name = unwrap_or_ok!(self.get_selected_game());
 
         // Return early, if autosaves are disabled for the currently selected game.
@@ -108,7 +116,7 @@ impl AppState {
     }
 
     /// Update the list of saves that're currently in the savegame folder of the selected game.
-    fn update_manual_saves(&mut self) -> Result<()> {
+    pub fn update_manual_saves(&mut self) -> Result<()> {
         let name = unwrap_or_ok!(self.get_selected_game());
 
         // Return early, if autosaves are disabled for the currently selected game.

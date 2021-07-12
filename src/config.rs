@@ -12,10 +12,6 @@ use shellexpand::tilde;
 pub struct GameConfig {
     /// The folder where the save files are located.
     pub savegame_location: String,
-    /// Determines, whether there are multiple saves located in the folder or whether the specified
-    /// folder itself is a singular save of the game.
-    pub singular_save: bool,
-    /// The amount of autosaves to keep, as soon as changes are detected.
     /// Set to 0, if you want to disable autosaves.
     pub autosave: usize,
     /// A list of glob patterns that should be ignored.
@@ -35,12 +31,6 @@ impl GameConfig {
 pub struct Config {
     pub backup_directory: String,
     pub games: HashMap<String, GameConfig>,
-}
-
-impl Config {
-    pub fn backup_directory(&self) -> PathBuf {
-        PathBuf::from(tilde(&self.backup_directory).into_owned())
-    }
 }
 
 impl Config {
@@ -93,5 +83,19 @@ impl Config {
     pub fn get_config_path() -> Result<PathBuf> {
         let config_dir = dirs::config_dir().context("Couldn't find config dir")?;
         Ok(config_dir.join("game_saver.toml"))
+    }
+
+    pub fn backup_directory(&self) -> PathBuf {
+        PathBuf::from(tilde(&self.backup_directory).into_owned())
+    }
+
+    /// Get the backup directory for a specific game.
+    pub fn game_dir(&self, name: &str) -> PathBuf {
+        PathBuf::from(tilde(&self.backup_directory).into_owned()).join(name)
+    }
+
+    /// Get the autosave directory for a specific game.
+    pub fn autosave_dir(&self, name: &str) -> PathBuf {
+        self.game_dir(name).join("autosaves")
     }
 }

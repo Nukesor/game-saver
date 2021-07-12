@@ -1,8 +1,9 @@
-# Game Saver
+# Game-Saver
 
-A small utility to manage save-games from your commandline.
+Game-Saver is a small utility which aims to provide multi-slot saves and auto-saving for games that don't provide it out of the box.
 
-This tool is designed to operate on top of games' save logic, not in conjunction with it.
+The goal is to enable users to easily save and restore multiple versions of a savegame folder.
+This tool is designed to extend a game's save logic and not to replace it.
 
 ### Features:
 
@@ -10,3 +11,14 @@ This tool is designed to operate on top of games' save logic, not in conjunction
 - Create autosaves when files in the watched folder change.
 - Restore saves
 - Support for multiple games.
+
+
+### TODOS:
+
+- Add eventlog
+- Add manual save
+- Investigate how prompts work
+- Show timestamp floating on the right of the savegame lists
+- Add switch for save-on-change and save-after-time.
+    Right now we only have save-on-change.
+- Add how-to section, which explains how to use it.

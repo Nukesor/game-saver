@@ -10,7 +10,7 @@ use tui::Frame as TuiFrame;
 
 use crate::app::state::UiState;
 
-use super::helper::list::StatefulList;
+use super::helper::list::{SaveList, StatefulList};
 use super::helper::terminal::Terminal;
 use super::AppState;
 
@@ -48,14 +48,14 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
             .split(main_chunks[1]);
 
         // Draw the save lists
-        draw_list(
+        draw_save_list(
             frame,
             right_chunks[0],
             &mut state.autosaves,
             "Autosaves",
             matches!(state.state, UiState::Autosave),
         );
-        draw_list(
+        draw_save_list(
             frame,
             right_chunks[1],
             &mut state.manual_saves,
@@ -84,6 +84,40 @@ fn draw_list(
         .items
         .iter()
         .map(|name| ListItem::new(name.clone()))
+        .collect();
+
+    // Create a List from all list items and highlight the currently selected one
+    let mut list = List::new(items)
+        .block(Block::default().borders(Borders::ALL).title(title))
+        .highlight_symbol(">> ");
+
+    // Only do highlight styling, if it's the focused window.
+    // The selected item can still be identified by the highlight_symbol.
+    if highlight {
+        list = list.highlight_style(
+            Style::default()
+                .fg(Color::White)
+                .bg(Color::DarkGray)
+                .add_modifier(Modifier::BOLD),
+        );
+    }
+
+    // Render the list
+    frame.render_stateful_widget(list, chunk, &mut stateful_list.state);
+}
+
+fn draw_save_list(
+    frame: &mut Frame,
+    chunk: Rect,
+    stateful_list: &mut SaveList,
+    title: &str,
+    highlight: bool,
+) {
+    // Create the game selection.
+    let items: Vec<ListItem> = stateful_list
+        .items
+        .iter()
+        .map(|save| ListItem::new(save.file_name.clone()))
         .collect();
 
     // Create a List from all list items and highlight the currently selected one

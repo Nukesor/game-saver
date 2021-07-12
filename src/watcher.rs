@@ -14,6 +14,7 @@ use watchexec::{
 use crate::config::{Config, GameConfig};
 
 /// This is th message that will be send via the mpsc channel as soon as files change.
+#[derive(Debug)]
 pub struct Update {
     pub game_name: String,
     pub locations: Vec<PathBuf>,
