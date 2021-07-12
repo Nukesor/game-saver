@@ -45,6 +45,7 @@ impl AppState {
         for name in config.games.keys() {
             items.push(name.clone());
         }
+        items.sort();
         let mut state = AppState {
             games: StatefulList::with_items(items),
             autosaves: SaveList::with_items(Vec::new()),
