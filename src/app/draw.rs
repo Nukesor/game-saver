@@ -53,19 +53,19 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
             right_chunks[0],
             &mut state.autosaves,
             "Autosaves",
-            matches!(state.state, UiState::Autosave),
+            matches!(state.state, UiState::Autosave(_)),
         );
         draw_save_list(
             frame,
             right_chunks[1],
             &mut state.manual_saves,
             "Saves",
-            matches!(state.state, UiState::ManualSave),
+            matches!(state.state, UiState::ManualSave(_)),
         );
         draw_list(frame, right_chunks[2], &state.event_log, "Event log");
 
         // Draw the input field in the middle of the screen, if we're expecting input
-        if matches!(state.state, UiState::Input) {
+        if let UiState::Input(input) = &state.state {
             // Get the vertical middle of the screen.
             let overlay_vertical = Layout::default()
                 .constraints(
@@ -91,7 +91,7 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
                 )
                 .split(overlay_vertical[1]);
 
-            let paragraph = Paragraph::new(Text::from(state.input.clone()))
+            let paragraph = Paragraph::new(Text::from(input.input.clone()))
                 .block(Block::default().borders(Borders::ALL).title("Name"));
 
             // Clear the input block and draw the input field

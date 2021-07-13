@@ -1,34 +1,74 @@
 use std::collections::HashMap;
 
-use anyhow::{Context, Result};
+use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Local};
 
-use super::helper::files::get_archive_files;
+use super::helper::files::{get_archive_files, SaveFile};
 use super::helper::list::{SaveList, StatefulList};
-use crate::config::Config;
-use crate::unwrap_or_ok;
+use crate::config::{Config, GameConfig};
 
 /// This indicates the current focused part of the UI.
+#[derive(Clone)]
 pub enum UiState {
-    Games,
-    Autosave,
-    ManualSave,
+    Games(String),
+    Autosave(String),
+    ManualSave(String),
     /// The user is in the middle of writing something into the input field.
-    Input,
+    Input(Input),
+    /// The user is in the middle of writing something into the input field.
+    Prompt(PromptType),
+}
+
+#[derive(Clone)]
+pub struct Input {
+    pub game: String,
+    pub input: String,
+    pub input_type: InputType,
+}
+
+#[derive(Clone)]
+pub enum InputType {
+    /// Create a new save for a specific game
+    Create,
+    /// Rename an existing save file.
+    Rename(SaveFile),
+}
+
+#[derive(Clone)]
+pub enum PromptType {
+    Rename {
+        save: SaveFile,
+        new_name: String,
+    },
+    RenameOverwrite {
+        save: SaveFile,
+        new_name: String,
+    },
+    CreateOverwrite {
+        input: String,
+        game: String,
+        config: GameConfig,
+    },
 }
 
 /// This struct holds the state for the tui-rs interface.
 /// This includes, lists, selected items as well as temporary input elements.
 pub struct AppState {
+    /// A local clone of the config for convenience purposes.
+    pub config: Config,
+
+    // All lists that are displayed in the app
     pub games: StatefulList,
     pub autosaves: SaveList,
     pub manual_saves: SaveList,
     /// This is a non-persisted event log, which is used to show the user performed actions.
     pub event_log: Vec<String>,
-    pub input: String,
+
+    // As we have an interactive UI, we have to do a lot of state management
+    /// This represents the current active state.
     pub state: UiState,
-    /// A local clone of the config for convenience purposes.
-    pub config: Config,
+    /// Remember the previous state. That way we can return to the correct position after prompts.
+    pub previous_state: UiState,
 
     /// This map is used to store games that recently changed on disk.
     /// We perform changes once there haven't been any changes for some time.
@@ -43,18 +83,28 @@ pub struct AppState {
 impl AppState {
     /// Create a new state with all games from the configuration file.
     pub fn new(config: &Config) -> Result<AppState> {
+        // Get the very first game of the config. This will be auto-selected.
+        // If no game exists, we just abort with an error message.
+        let game = if let Some(name) = config.games.keys().next() {
+            name.clone()
+        } else {
+            bail!("There must be at least one game in your config.");
+        };
+
+        // Get a list of all games in the config
         let mut items = vec![];
         for name in config.games.keys() {
             items.push(name.clone());
         }
         items.sort();
+
         let mut state = AppState {
             games: StatefulList::with_items(items),
             autosaves: SaveList::with_items(Vec::new()),
             manual_saves: SaveList::with_items(Vec::new()),
             event_log: Vec::new(),
-            input: String::new(),
-            state: UiState::Games,
+            state: UiState::Games(game.clone()),
+            previous_state: UiState::Games(game),
             config: config.clone(),
             changes_detected: HashMap::new(),
             ignore_changes: HashMap::new(),
@@ -68,31 +118,31 @@ impl AppState {
         Ok(state)
     }
 
-    /// Return the name of the currently selected game.
-    pub fn get_selected_game(&self) -> Option<String> {
-        let selected = self.games.state.selected()?;
-        let game = self
-            .games
-            .items
-            .get(selected)
-            .expect("The game should exist as it's selected")
-            .clone();
+    pub fn set_state(&mut self, state: UiState) {
+        self.previous_state = self.state.clone();
+        self.state = state;
+    }
 
-        Some(game)
+    pub fn get_state(&mut self) -> UiState {
+        self.state.clone()
+    }
+
+    /// Return the name of the currently selected game.
+    pub fn get_selected_game(&self) -> String {
+        self.games
+            .get_selected()
+            .expect("We make sure there's at least one game, before creating the state.")
     }
 
     /// Return whether we have to handle autosave or not.
     pub fn selected_game_has_autosave(&self) -> bool {
-        if let Some(name) = self.get_selected_game() {
-            let game_config = self.config.games.get(&name).unwrap();
-            if game_config.autosave == 0 {
-                return false;
-            }
-
-            return true;
+        let game_name = self.get_selected_game();
+        let game_config = self.config.games.get(&game_name).unwrap();
+        if game_config.autosave == 0 {
+            return false;
         }
 
-        false
+        return true;
     }
 
     pub fn log(&mut self, message: &str) {
@@ -110,7 +160,7 @@ impl AppState {
 
     /// Update the list of saves that're currently in the autosave folder of the selected game.
     pub fn update_autosaves(&mut self) -> Result<()> {
-        let name = unwrap_or_ok!(self.get_selected_game());
+        let name = self.get_selected_game();
 
         // Return early, if autosaves are disabled for the currently selected game.
         if !self.selected_game_has_autosave() {
@@ -126,7 +176,7 @@ impl AppState {
 
     /// Update the list of saves that're currently in the savegame folder of the selected game.
     pub fn update_manual_saves(&mut self) -> Result<()> {
-        let name = unwrap_or_ok!(self.get_selected_game());
+        let name = self.get_selected_game();
 
         // Return early, if autosaves are disabled for the currently selected game.
         let game_config = self.config.games.get(&name).unwrap();

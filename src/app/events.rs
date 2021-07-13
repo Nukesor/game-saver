@@ -8,7 +8,7 @@ use crate::app::saves::restore_save;
 
 use super::helper::terminal::{restore_terminal, Terminal};
 use super::saves::manually_save_game;
-use super::state::{AppState, UiState};
+use super::state::{AppState, Input, InputType, UiState};
 
 /// This enum signals the parent function, which actions should be taken.
 pub enum EventResult {
@@ -39,12 +39,14 @@ fn handle_key(
     terminal: &mut Terminal,
     state: &mut AppState,
 ) -> Result<EventResult> {
-    if matches!(state.state, UiState::Input) {
-        return handle_input(event, state);
+    let current_ui_state = state.get_state();
+
+    if let UiState::Input(input) = current_ui_state {
+        return handle_input(event, state, input);
     }
 
     if event.modifiers.contains(KeyModifiers::CONTROL) {
-        return handle_control(event, terminal, state);
+        return handle_control(event, terminal, state, current_ui_state);
     }
     match event.code {
         KeyCode::Char('q') => {
@@ -53,44 +55,48 @@ fn handle_key(
             return Ok(EventResult::Quit);
         }
         KeyCode::Char('a') => {
-            if state.get_selected_game().is_some() {
-                // Create a new savegame for the current game.
-                state.state = UiState::Input;
-                state.input = String::new();
-                return Ok(EventResult::Redraw);
-            }
+            let game_name = state.get_selected_game();
+            // Create a new savegame for the current game.
+            state.set_state(UiState::Input(Input {
+                game: game_name,
+                input: String::new(),
+                input_type: InputType::Create,
+            }));
+            return Ok(EventResult::Redraw);
         }
         KeyCode::Down | KeyCode::Char('j') => {
             // Navigate to the next item of the focused list.
-            match state.state {
-                UiState::Games => {
+            match current_ui_state {
+                UiState::Games(_) => {
                     state.games.next();
+                    state.set_state(UiState::Games(state.get_selected_game()));
                     state.update_saves()?;
                 }
-                UiState::Autosave => state.autosaves.next(),
-                UiState::ManualSave => state.manual_saves.next(),
+                UiState::Autosave(_) => state.autosaves.next(),
+                UiState::ManualSave(_) => state.manual_saves.next(),
                 _ => (),
             }
             return Ok(EventResult::Redraw);
         }
         KeyCode::Up | KeyCode::Char('k') => {
             // Navigate to the previous item of the focused list.
-            match state.state {
-                UiState::Games => {
+            match current_ui_state {
+                UiState::Games(_) => {
                     state.games.previous();
+                    state.set_state(UiState::Games(state.get_selected_game()));
                     state.update_saves()?;
                 }
-                UiState::Autosave => state.autosaves.previous(),
-                UiState::ManualSave => state.manual_saves.previous(),
+                UiState::Autosave(_) => state.autosaves.previous(),
+                UiState::ManualSave(_) => state.manual_saves.previous(),
                 _ => (),
             }
             return Ok(EventResult::Redraw);
         }
         KeyCode::Enter => {
             // Restore a savegame.
-            if matches!(state.state, UiState::Autosave) {
-                if let Some(save) = state.autosaves.get_selected() {
-                    if let Some(game_name) = state.get_selected_game() {
+            match current_ui_state {
+                UiState::Autosave(game_name) => {
+                    if let Some(save) = state.autosaves.get_selected() {
                         restore_save(&state.config, &game_name, &save)?;
                         state.ignore_changes.insert(game_name.clone(), Local::now());
                         state.log(&format!(
@@ -100,11 +106,8 @@ fn handle_key(
                         return Ok(EventResult::Redraw);
                     }
                 }
-            }
-
-            if matches!(state.state, UiState::ManualSave) {
-                if let Some(save) = state.manual_saves.get_selected() {
-                    if let Some(game_name) = state.get_selected_game() {
+                UiState::ManualSave(game_name) => {
+                    if let Some(save) = state.manual_saves.get_selected() {
                         restore_save(&state.config, &game_name, &save)?;
                         state.ignore_changes.insert(game_name.clone(), Local::now());
                         state.log(&format!(
@@ -114,6 +117,7 @@ fn handle_key(
                         return Ok(EventResult::Redraw);
                     }
                 }
+                _ => (),
             }
         }
         _ => {}
@@ -122,35 +126,35 @@ fn handle_key(
     Ok(EventResult::Ignore)
 }
 
-fn handle_input(event: &KeyEvent, state: &mut AppState) -> Result<EventResult> {
+/// Handle input during
+fn handle_input(event: &KeyEvent, state: &mut AppState, mut input: Input) -> Result<EventResult> {
     match event.code {
         KeyCode::Esc => {
             // Abort the savegame cration process
-            state.state = UiState::ManualSave;
-            state.input = String::new();
+            state.state = state.previous_state.clone();
             return Ok(EventResult::Redraw);
         }
         KeyCode::Enter => {
             // Create a new save.
-            let game_name = state.get_selected_game().unwrap();
-            manually_save_game(&state.config, &game_name, &state.input)?;
+            manually_save_game(&state.config, &input.game, &input.input)?;
             state.log(&format!(
                 "New manual save for {} with name '{}'",
-                &game_name, &state.input
+                &input.game, &input.input
             ));
-            state.state = UiState::ManualSave;
-            state.input = String::new();
+            state.state = state.previous_state.clone();
             state.update_manual_saves()?;
             return Ok(EventResult::Redraw);
         }
         KeyCode::Backspace => {
             // Remove a character from the name
-            state.input.pop();
+            input.input.pop();
+            state.state = UiState::Input(input);
             return Ok(EventResult::Redraw);
         }
         KeyCode::Char(character) => {
             // Add the character to the name
-            state.input.push(character);
+            input.input.push(character);
+            state.state = UiState::Input(input);
             return Ok(EventResult::Redraw);
         }
         _ => {}
@@ -164,6 +168,7 @@ fn handle_control(
     event: &KeyEvent,
     terminal: &mut Terminal,
     state: &mut AppState,
+    current_ui_state: UiState,
 ) -> Result<EventResult> {
     match event.code {
         KeyCode::Char('c') => {
@@ -173,19 +178,22 @@ fn handle_control(
         }
         KeyCode::Left | KeyCode::Char('h') => {
             // Moving to the left moves focus to the game list.
-            if matches!(state.state, UiState::Autosave | UiState::ManualSave) {
-                state.state = UiState::Games;
-                return Ok(EventResult::Redraw);
+            match current_ui_state {
+                UiState::Autosave(game) | UiState::ManualSave(game) => {
+                    state.set_state(UiState::Games(game));
+                    return Ok(EventResult::Redraw);
+                }
+                _ => {}
             }
         }
         KeyCode::Right | KeyCode::Char('l') => {
             // Moving to the left right moves focus to the saves.
             // If autosaves are enabled we focus it, otherwise we fallback to manual saves.
             if state.selected_game_has_autosave() {
-                state.state = UiState::Autosave;
+                state.state = UiState::Autosave(state.get_selected_game());
                 state.autosaves.focus();
             } else {
-                state.state = UiState::ManualSave;
+                state.state = UiState::ManualSave(state.get_selected_game());
                 state.manual_saves.focus();
             }
             return Ok(EventResult::Redraw);
@@ -193,14 +201,20 @@ fn handle_control(
         KeyCode::Down | KeyCode::Char('j') | KeyCode::Up | KeyCode::Char('k') => {
             // Moving up down while focus is on the save lists should switch to the other
             // non-focused list.
-            if state.selected_game_has_autosave() && matches!(state.state, UiState::ManualSave) {
-                state.state = UiState::Autosave;
-                state.autosaves.focus();
-                return Ok(EventResult::Redraw);
-            } else if matches!(state.state, UiState::Autosave) {
-                state.state = UiState::ManualSave;
-                state.manual_saves.focus();
-                return Ok(EventResult::Redraw);
+            match current_ui_state {
+                UiState::ManualSave(game) => {
+                    if state.selected_game_has_autosave() {
+                        state.set_state(UiState::Autosave(game));
+                        state.autosaves.focus();
+                        return Ok(EventResult::Redraw);
+                    }
+                }
+                UiState::Autosave(game) => {
+                    state.state = UiState::ManualSave(game);
+                    state.manual_saves.focus();
+                    return Ok(EventResult::Redraw);
+                }
+                _ => (),
             }
         }
 
