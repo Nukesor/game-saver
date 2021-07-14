@@ -14,8 +14,10 @@ static DEFAULT_CONFIG: &'static str = include_str!("../example_game_saver.toml")
 pub struct GameConfig {
     /// The folder where the save files are located.
     pub savegame_location: String,
-    /// Set to 0, if you want to disable autosaves.
-    pub autosave: usize,
+    /// The amount of autosave files you want to keep.
+    /// Old autosaves that exceed this limit will be deleted.
+    /// Set to 0, if you want to disable.
+    pub autosaves: usize,
     /// A list of glob patterns that should be ignored.
     /// The paths should be relative to `savegame_location/`.
     ///

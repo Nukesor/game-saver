@@ -138,7 +138,7 @@ impl AppState {
     pub fn selected_game_has_autosave(&self) -> bool {
         let game_name = self.get_selected_game();
         let game_config = self.config.games.get(&game_name).unwrap();
-        if game_config.autosave == 0 {
+        if game_config.autosaves == 0 {
             return false;
         }
 
@@ -180,7 +180,7 @@ impl AppState {
 
         // Return early, if autosaves are disabled for the currently selected game.
         let game_config = self.config.games.get(&name).unwrap();
-        if game_config.autosave == 0 {
+        if game_config.autosaves == 0 {
             return Ok(());
         }
 

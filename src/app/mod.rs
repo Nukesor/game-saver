@@ -87,7 +87,7 @@ fn handle_updates(state: &mut AppState, receiver: &Receiver<Update>) -> Result<b
     // Go through all updates for changed files and set the update time to now.
     while let Ok(update) = receiver.try_recv() {
         let game_config = state.config.games.get(&update.game_name).unwrap();
-        if game_config.autosave == 0 {
+        if game_config.autosaves == 0 {
             continue;
         }
 

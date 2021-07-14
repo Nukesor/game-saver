@@ -18,7 +18,7 @@ pub fn autosave_game(config: &Config, game: &str) -> Result<()> {
     let mut save_files = get_archive_files(&autosave_dir)?;
 
     // Delete old autosave files until we have one slot left for the new save.
-    while save_files.len() >= game_config.autosave {
+    while save_files.len() >= game_config.autosaves {
         let save_to_delete = if let Some(file) = save_files.pop() {
             file
         } else {
