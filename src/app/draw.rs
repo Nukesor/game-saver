@@ -90,32 +90,11 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
         }
 
         if let UiState::Prompt(prompt_type) = &state.state {
-            let message = match prompt_type {
-                PromptType::Delete { save } => {
-                    format!(
-                        "Delete the savefile '{}' for game {}",
-                        &save.file_name,
-                        state.get_selected_game()
-                    )
-                }
-                PromptType::Rename { save, new_name } => {
-                    format!("Rename the save '{}' to '{}'", &save.file_name, &new_name)
-                }
-                PromptType::RenameOverwrite { save, new_name } => {
-                    format!(
-                        "Do you really want to overwrite save '{}' with '{}'",
-                        &new_name, &save.file_name
-                    )
-                }
-                PromptType::CreateOverwrite { new_name, .. } => {
-                    format!("Do you really want to overwrite save '{}'", &new_name)
-                }
-            };
-
-            let text = Text::from(format!("{} (Y/n)", message));
             let block = Block::default()
                 .borders(Borders::ALL)
                 .title("Are you sure?");
+
+            let text = get_prompt_text(&prompt_type, state.get_selected_game());
             let paragraph = Paragraph::new(text).block(block);
 
             let modal = get_modal(&mut frame);
@@ -182,4 +161,29 @@ fn get_modal(frame: &mut Frame) -> Rect {
     frame.render_widget(Clear, overlay_horizontal[1]);
 
     overlay_horizontal[1]
+}
+
+fn get_prompt_text(prompt_type: &PromptType, game: String) -> Text {
+    let message = match prompt_type {
+        PromptType::Delete { save } => {
+            format!(
+                "Delete the savefile '{}' for game {}",
+                &save.file_name, game
+            )
+        }
+        PromptType::Rename { save, new_name } => {
+            format!("Rename the save '{}' to '{}'", &save.file_name, &new_name)
+        }
+        PromptType::RenameOverwrite { save, new_name } => {
+            format!(
+                "Do you realy want to overwrite save '{}' with '{}'",
+                &new_name, &save.file_name
+            )
+        }
+        PromptType::CreateOverwrite { new_name, .. } => {
+            format!("Do you really want to overwrite save '{}'", &new_name)
+        }
+    };
+
+    Text::from(format!("{} (Y/n)", message))
 }
