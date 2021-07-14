@@ -10,9 +10,9 @@ use crate::config::{Config, GameConfig};
 /// This indicates the current focused part of the UI.
 #[derive(Clone)]
 pub enum UiState {
-    Games(String),
-    Autosave(String),
-    ManualSave(String),
+    Games,
+    Autosave,
+    ManualSave,
     /// The user is in the middle of writing something into the input field.
     Input(Input),
     /// The user is in the middle of writing something into the input field.
@@ -85,7 +85,7 @@ impl AppState {
     pub fn new(config: &Config) -> Result<AppState> {
         // Get the very first game of the config. This will be auto-selected.
         // If no game exists, we just abort with an error message.
-        let game = if let Some(name) = config.games.keys().next() {
+        let first_game = if let Some(name) = config.games.keys().next() {
             name.clone()
         } else {
             bail!("There must be at least one game in your config.");
@@ -99,13 +99,13 @@ impl AppState {
         items.sort();
 
         let mut state = AppState {
+            config: config.clone(),
+            state: UiState::Games,
+            previous_state: UiState::Games,
             games: StatefulList::with_items(items),
             autosaves: SaveList::with_items(Vec::new()),
             manual_saves: SaveList::with_items(Vec::new()),
             event_log: Vec::new(),
-            state: UiState::Games(game.clone()),
-            previous_state: UiState::Games(game),
-            config: config.clone(),
             changes_detected: HashMap::new(),
             ignore_changes: HashMap::new(),
         };
@@ -127,7 +127,7 @@ impl AppState {
         self.state.clone()
     }
 
-    /// Return the name of the currently selected game.
+    /// Return the name of the currently selected game from the list.
     pub fn get_selected_game(&self) -> String {
         self.games
             .get_selected()

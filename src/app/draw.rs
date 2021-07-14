@@ -57,7 +57,7 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
                 .map(|save| save.file_name.clone())
                 .collect(),
             "Autosaves",
-            matches!(state.state, UiState::Autosave(_)),
+            matches!(state.state, UiState::Autosave),
         );
         frame.render_stateful_widget(autosave_list, right_chunks[0], &mut state.autosaves.state);
 
@@ -70,7 +70,7 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
                 .map(|save| save.file_name.clone())
                 .collect(),
             "Saves",
-            matches!(state.state, UiState::ManualSave(_)),
+            matches!(state.state, UiState::ManualSave),
         );
         frame.render_stateful_widget(manual_list, right_chunks[1], &mut state.manual_saves.state);
 
@@ -84,8 +84,6 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
 
             let paragraph = Paragraph::new(Text::from(input.input.clone()))
                 .block(Block::default().borders(Borders::ALL).title("Name"));
-
-            // Clear the input block and draw the input field
             frame.render_widget(paragraph, modal);
         }
     })?;
