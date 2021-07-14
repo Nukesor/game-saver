@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{bail, Context, Result};
+use anyhow::{anyhow, bail, Context, Result};
 use chrono::{DateTime, Local};
 
 use super::helper::files::{get_archive_files, SaveFile};
@@ -8,7 +8,7 @@ use super::helper::list::{SaveList, StatefulList};
 use crate::config::{Config, GameConfig};
 
 /// This indicates the current focused part of the UI.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum UiState {
     Games,
     Autosave,
@@ -19,22 +19,24 @@ pub enum UiState {
     Prompt(PromptType),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Input {
     pub game: String,
     pub input: String,
     pub input_type: InputType,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum InputType {
     /// Create a new save for a specific game
     Create,
     /// Rename an existing save file.
     Rename(SaveFile),
+    /// Delete an existing save file.
+    Delete(SaveFile),
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum PromptType {
     Rename {
         save: SaveFile,
@@ -67,8 +69,11 @@ pub struct AppState {
     // As we have an interactive UI, we have to do a lot of state management
     /// This represents the current active state.
     pub state: UiState,
-    /// Remember the previous state. That way we can return to the correct position after prompts.
-    pub previous_state: UiState,
+    /// Used to remember previous states.
+    /// This is needed, as we might have to jump through mulitple prompts.
+    /// After changing a name and being asked if it's ok to overwriting a file while doing so, we
+    /// still want to get back to the correct starting state.
+    pub previous_states: Vec<UiState>,
 
     /// This map is used to store games that recently changed on disk.
     /// We perform changes once there haven't been any changes for some time.
@@ -101,7 +106,7 @@ impl AppState {
         let mut state = AppState {
             config: config.clone(),
             state: UiState::Games,
-            previous_state: UiState::Games,
+            previous_states: Vec::new(),
             games: StatefulList::with_items(items),
             autosaves: SaveList::with_items(Vec::new()),
             manual_saves: SaveList::with_items(Vec::new()),
@@ -118,9 +123,22 @@ impl AppState {
         Ok(state)
     }
 
-    pub fn set_state(&mut self, state: UiState) {
-        self.previous_state = self.state.clone();
+    /// We enter the next UI state nesting level.
+    /// This is most likely some kind of prompt.
+    pub fn push_state(&mut self, state: UiState) {
+        self.previous_states.push(self.state.clone());
         self.state = state;
+    }
+
+    /// We go back to the previous UIState.
+    pub fn pop_state(&mut self) -> Result<()> {
+        let previous = self.previous_states.pop().ok_or(anyhow!(
+            "Tried to go back to previous state from {:?}, but there is no previous state.",
+            self.state
+        ))?;
+        self.state = previous;
+
+        Ok(())
     }
 
     pub fn get_state(&mut self) -> UiState {

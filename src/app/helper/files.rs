@@ -8,7 +8,7 @@ use chrono::{DateTime, Local, TimeZone};
 
 use crate::config::Config;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct SaveFile {
     pub path: PathBuf,
     pub file_name: String,

@@ -58,7 +58,7 @@ fn handle_key(
         KeyCode::Char('a') => {
             let game = state.get_selected_game();
             // Create a new savegame for the current game.
-            state.set_state(UiState::Input(Input {
+            state.push_state(UiState::Input(Input {
                 game,
                 input: String::new(),
                 input_type: InputType::Create,
@@ -70,7 +70,6 @@ fn handle_key(
             match current_ui_state {
                 UiState::Games => {
                     state.games.next();
-                    state.set_state(UiState::Games);
                     state.update_saves()?;
                 }
                 UiState::Autosave => state.autosaves.next(),
@@ -84,7 +83,6 @@ fn handle_key(
             match current_ui_state {
                 UiState::Games => {
                     state.games.previous();
-                    state.set_state(UiState::Games);
                     state.update_saves()?;
                 }
                 UiState::Autosave => state.autosaves.previous(),
@@ -134,7 +132,7 @@ fn handle_input(event: &KeyEvent, state: &mut AppState, mut input: Input) -> Res
     match event.code {
         KeyCode::Esc => {
             // Abort the savegame cration process
-            state.state = state.previous_state.clone();
+            state.pop_state()?;
             return Ok(EventResult::Redraw);
         }
         KeyCode::Enter => {
@@ -144,7 +142,7 @@ fn handle_input(event: &KeyEvent, state: &mut AppState, mut input: Input) -> Res
                 "New manual save for {} with name '{}'",
                 &input.game, &input.input
             ));
-            state.state = state.previous_state.clone();
+            state.pop_state()?;
             state.update_manual_saves()?;
             return Ok(EventResult::Redraw);
         }
@@ -183,7 +181,7 @@ fn handle_control(
             // Moving to the left moves focus to the game list.
             match current_ui_state {
                 UiState::Autosave | UiState::ManualSave => {
-                    state.set_state(UiState::Games);
+                    state.state = UiState::Games;
                     return Ok(EventResult::Redraw);
                 }
                 _ => {}
@@ -193,10 +191,10 @@ fn handle_control(
             // Moving to the left right moves focus to the saves.
             // If autosaves are enabled we focus it, otherwise we fallback to manual saves.
             if state.selected_game_has_autosave() {
-                state.set_state(UiState::Autosave);
+                state.state = UiState::Autosave;
                 state.autosaves.focus();
             } else {
-                state.set_state(UiState::ManualSave);
+                state.state = UiState::ManualSave;
                 state.manual_saves.focus();
             }
             return Ok(EventResult::Redraw);
@@ -207,13 +205,13 @@ fn handle_control(
             match current_ui_state {
                 UiState::ManualSave => {
                     if state.selected_game_has_autosave() {
-                        state.set_state(UiState::Autosave);
+                        state.state = UiState::Autosave;
                         state.autosaves.focus();
                         return Ok(EventResult::Redraw);
                     }
                 }
                 UiState::Autosave => {
-                    state.set_state(UiState::ManualSave);
+                    state.state = UiState::ManualSave;
                     state.manual_saves.focus();
                     return Ok(EventResult::Redraw);
                 }
