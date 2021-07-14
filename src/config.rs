@@ -7,6 +7,8 @@ use anyhow::{Context, Result};
 use serde_derive::{Deserialize, Serialize};
 use shellexpand::tilde;
 
+static DEFAULT_CONFIG: &'static str = include_str!("../example_game_saver.toml");
+
 /// The config for one game
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct GameConfig {
@@ -54,30 +56,12 @@ impl Config {
         }
 
         // No config exists yet. Create a default config and persist it onto disk.
-        let default_config = Config {
-            backup_directory: "~/.local/share/game_saver/".into(),
-            games: HashMap::new(),
-        };
-        default_config.write()?;
+        let mut file = File::create(&path)?;
+        file.write_all(&DEFAULT_CONFIG.as_bytes())?;
 
-        Ok(default_config)
-    }
-
-    /// Write the current config to disk.
-    pub fn write(&self) -> Result<()> {
-        let path = Config::get_config_path()?;
-
-        // The config file exists. Try to parse it
-        let mut file = if path.exists() {
-            File::open(path)?
-        } else {
-            File::create(path)?
-        };
-
-        let config = toml::to_string(&self)?;
-        file.write_all(&config.as_bytes())?;
-
-        Ok(())
+        // Recursively load config, now that we made sure it exists.
+        let config = Config::new(&Some(path))?;
+        Ok(config)
     }
 
     pub fn get_config_path() -> Result<PathBuf> {

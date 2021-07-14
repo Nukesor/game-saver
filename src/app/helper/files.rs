@@ -93,6 +93,12 @@ pub fn init_directories(config: &Config) -> Result<()> {
 
     // Create subfolders for each game
     for (name, game_config) in &config.games {
+        // Show a special error message, if the user is using the path from the example file.
+        if game_config.savegame_location == "~/some/path/to/your/save/files" {
+            bail!("Please adjust the default configuration file at ~/.config/game_saver.toml",);
+        }
+
+        // Make sure all savegame locations do exist
         let savegame_location = game_config.savegame_location();
         if !savegame_location.exists() {
             bail!(
@@ -102,6 +108,7 @@ pub fn init_directories(config: &Config) -> Result<()> {
             );
         }
 
+        // Create the backup directory for this game.
         let game_backup_dir = config.save_dir(name);
         if !game_backup_dir.exists() {
             create_dir(&game_backup_dir).context(format!(

@@ -1,7 +1,17 @@
+# The directory where Game-saver will store the backups of your games' save files.
 backup_directory = "~/.local/share/game_saver/"
 
-[games.testing]
-savegame_location = "~/temp/"
-singular_save = true
+[games.YOUR_GAME]
+# The folder where the save files are located.
+savegame_location = "~/some/path/to/your/save/files"
+
+# The amount of autosave files you want to keep.
+# Old autosaves that exceed this limit will be deleted.
+# Set to 0, if you want to disable.
 autosaves = 5
+
+# A list of glob patterns that should be ignored.
+# The paths should be relative to `savegame_location/`.
+#
+# `.ignore` Files will also be respected.
 ignored_files = []
