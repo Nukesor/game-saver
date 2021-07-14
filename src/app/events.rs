@@ -97,6 +97,24 @@ fn handle_input(event: &KeyEvent, state: &mut AppState, mut input: Input) -> Res
                     return Ok(EventResult::Redraw);
                 }
                 InputType::Rename(save) => {
+                    // Check if new filename already exists.
+                    // If it does, whether the user wants to overwrite the existing file.
+                    let parent_directory = save
+                        .path
+                        .parent()
+                        .expect("Saves shouldn't be the root folder.");
+                    if parent_directory
+                        .join(format!("{}.tar.zst", &input.input))
+                        .exists()
+                    {
+                        state.push_state(UiState::Prompt(PromptType::RenameOverwrite {
+                            save,
+                            new_name: input.input.clone(),
+                        }));
+                        return Ok(EventResult::Redraw);
+                    }
+
+                    // The destination doesn't exist yet. Simply ask if rename is correct.
                     state.push_state(UiState::Prompt(PromptType::Rename {
                         save,
                         new_name: input.input.clone(),
@@ -136,18 +154,31 @@ fn handle_prompt(
             return Ok(EventResult::Redraw);
         }
         KeyCode::Char('y' | 'Y') => match prompt_type {
-            PromptType::Rename { save, new_name } => {
+            PromptType::RenameOverwrite { save, new_name }
+            | PromptType::Rename { save, new_name } => {
                 rename_save(&save, &new_name)?;
                 state.update_saves()?;
                 // Double pop the state, as we had to have an input beforehand.
                 state.pop_state()?;
                 state.pop_state()?;
+                state.log(&format!("Renamed '{}' to '{}'", &save.file_name, &new_name));
+
                 return Ok(EventResult::Redraw);
             }
-            PromptType::RenameOverwrite { save, new_name } => todo!(),
-            PromptType::CreateOverwrite { new_name, game } => todo!(),
+            PromptType::CreateOverwrite { new_name, game } => {
+                manually_save_game(&state.config, &game, &new_name)?;
+                state.log(&format!(
+                    "New manual save for {} with name '{}'",
+                    &game, &new_name
+                ));
+                state.pop_state()?;
+                state.pop_state()?;
+                state.update_manual_saves()?;
+                return Ok(EventResult::Redraw);
+            }
             PromptType::Delete { save } => {
                 delete_save(&save)?;
+                state.log(&format!("Deleted save '{}'", &save.file_name));
                 state.pop_state()?;
                 match state.state {
                     UiState::Autosave => {
@@ -247,7 +278,7 @@ fn handle_autosave_list(event: &KeyEvent, state: &mut AppState) -> Result<EventR
             }
         }
         KeyCode::Char('r') => {
-            // Delete a autosave
+            // Rename a autosave
             if let Some(save) = state.autosaves.get_selected() {
                 state.push_state(UiState::Input(Input {
                     game: state.get_selected_game(),
@@ -302,12 +333,30 @@ fn handle_manual_save_list(event: &KeyEvent, state: &mut AppState) -> Result<Eve
 
     match event.code {
         KeyCode::Down | KeyCode::Char('j') => {
-            state.autosaves.next();
+            state.manual_saves.next();
             return Ok(EventResult::Redraw);
         }
         KeyCode::Up | KeyCode::Char('k') => {
-            state.autosaves.previous();
+            state.manual_saves.previous();
             return Ok(EventResult::Redraw);
+        }
+        KeyCode::Delete | KeyCode::Char('d') => {
+            // Delete a autosave
+            if let Some(save) = state.manual_saves.get_selected() {
+                state.push_state(UiState::Prompt(PromptType::Delete { save }));
+                return Ok(EventResult::Redraw);
+            }
+        }
+        KeyCode::Char('r') => {
+            // Rename a autosave
+            if let Some(save) = state.manual_saves.get_selected() {
+                state.push_state(UiState::Input(Input {
+                    game: state.get_selected_game(),
+                    input: save.file_name.clone(),
+                    input_type: InputType::Rename(save.clone()),
+                }));
+                return Ok(EventResult::Redraw);
+            }
         }
         KeyCode::Enter => {
             // Restore a autosave game.
