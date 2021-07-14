@@ -12,9 +12,14 @@ use super::state::{AppState, Input, InputType, UiState};
 
 /// This enum signals the parent function, which actions should be taken.
 pub enum EventResult {
+    /// The event has been handled and we should redraw the window
     Redraw,
+    /// The user wants to quit. Exit the program
     Quit,
+    /// The event has been handled, but it should be ignored it.
     Ignore,
+    /// The event hasn't been handled by a handler, we can check with the next one.
+    NotHandled,
 }
 
 /// Handle all events.
@@ -24,12 +29,12 @@ pub fn handle_events(terminal: &mut Terminal, state: &mut AppState) -> Result<Ev
     // Check if there are any new events.
     // Return earyl if there aren't.
     if !poll(Duration::from_millis(100))? {
-        return Ok(EventResult::Ignore);
+        return Ok(EventResult::NotHandled);
     }
 
     match read()? {
         Event::Key(event) => handle_key(&event, terminal, state),
-        _ => Ok(EventResult::Ignore),
+        _ => Ok(EventResult::NotHandled),
     }
 }
 
@@ -41,90 +46,37 @@ fn handle_key(
 ) -> Result<EventResult> {
     let current_ui_state = state.get_state();
 
-    if let UiState::Input(input) = current_ui_state {
-        return handle_input(event, state, input);
-    }
-
     if event.modifiers.contains(KeyModifiers::CONTROL) {
         return handle_control(event, terminal, state, current_ui_state);
     }
 
-    match event.code {
-        KeyCode::Char('q') => {
-            // 'q' instantly exits the program.
-            restore_terminal(terminal)?;
-            return Ok(EventResult::Quit);
-        }
-        KeyCode::Char('a') => {
-            let game = state.get_selected_game();
-            // Create a new savegame for the current game.
-            state.push_state(UiState::Input(Input {
-                game,
-                input: String::new(),
-                input_type: InputType::Create,
-            }));
-            return Ok(EventResult::Redraw);
-        }
-        KeyCode::Down | KeyCode::Char('j') => {
-            // Navigate to the next item of the focused list.
-            match current_ui_state {
-                UiState::Games => {
-                    state.games.next();
-                    state.update_saves()?;
-                }
-                UiState::Autosave => state.autosaves.next(),
-                UiState::ManualSave => state.manual_saves.next(),
-                _ => (),
-            }
-            return Ok(EventResult::Redraw);
-        }
-        KeyCode::Up | KeyCode::Char('k') => {
-            // Navigate to the previous item of the focused list.
-            match current_ui_state {
-                UiState::Games => {
-                    state.games.previous();
-                    state.update_saves()?;
-                }
-                UiState::Autosave => state.autosaves.previous(),
-                UiState::ManualSave => state.manual_saves.previous(),
-                _ => (),
-            }
-            return Ok(EventResult::Redraw);
-        }
-        KeyCode::Enter => {
-            // Restore a savegame.
-            match current_ui_state {
-                UiState::Autosave => {
-                    if let Some(save) = state.autosaves.get_selected() {
-                        let game = state.get_selected_game();
-                        restore_save(&state.config, &game, &save)?;
-                        state.ignore_changes.insert(game.clone(), Local::now());
-                        state.log(&format!(
-                            "Restored savefile {} for {}",
-                            save.file_name, &game
-                        ));
-                        return Ok(EventResult::Redraw);
-                    }
-                }
-                UiState::ManualSave => {
-                    if let Some(save) = state.manual_saves.get_selected() {
-                        let game = state.get_selected_game();
-                        restore_save(&state.config, &game, &save)?;
-                        state.ignore_changes.insert(game.clone(), Local::now());
-                        state.log(&format!(
-                            "Restored savefile '{}' for {}",
-                            save.file_name, game
-                        ));
-                        return Ok(EventResult::Redraw);
-                    }
-                }
-                _ => (),
-            }
-        }
-        _ => {}
+    // Run through strictly state-specific handlers.
+    let mut result = match current_ui_state {
+        UiState::Input(input) => return handle_input(event, state, input),
+        UiState::Prompt(_) => EventResult::NotHandled,
+        UiState::Games => handle_game_list(event, state)?,
+        UiState::Autosave => handle_autosave_list(event, state)?,
+        UiState::ManualSave => handle_manual_save_list(event, state)?,
+    };
+
+    // Return the result, if it has been handled by one of the specific handlers
+    if !matches!(result, EventResult::NotHandled) {
+        return Ok(result);
     }
 
-    Ok(EventResult::Ignore)
+    if matches!(
+        current_ui_state,
+        UiState::Games | UiState::Autosave | UiState::ManualSave
+    ) {
+        result = handle_main_view(event, terminal, state)?;
+    }
+
+    // Return the result, if it has been handled by the main view handler
+    if !matches!(result, EventResult::NotHandled) {
+        return Ok(result);
+    }
+
+    handle_exits(event, terminal)
 }
 
 /// Handle input during
@@ -164,6 +116,162 @@ fn handle_input(event: &KeyEvent, state: &mut AppState, mut input: Input) -> Res
     Ok(EventResult::Ignore)
 }
 
+fn handle_main_view(
+    event: &KeyEvent,
+    terminal: &mut Terminal,
+    state: &mut AppState,
+) -> Result<EventResult> {
+    //handle_global(event, terminal, state, current_ui_state);
+    match event.code {
+        KeyCode::Char('q') => {
+            // 'q' instantly exits the program.
+            restore_terminal(terminal)?;
+            return Ok(EventResult::Quit);
+        }
+        KeyCode::Char('a') => {
+            let game = state.get_selected_game();
+            // Create a new savegame for the current game.
+            state.push_state(UiState::Input(Input {
+                game,
+                input: String::new(),
+                input_type: InputType::Create,
+            }));
+            return Ok(EventResult::Redraw);
+        }
+        _ => {}
+    }
+
+    match event {
+        KeyEvent {
+            modifiers: KeyModifiers::CONTROL,
+            code: KeyCode::Char('l'),
+        } => {
+            // Moving to the left moves focus to the save lists.
+            // If autosaves are enabled we focus it, otherwise we fallback to manual saves.
+            if state.selected_game_has_autosave() {
+                state.state = UiState::Autosave;
+                state.autosaves.focus();
+            } else {
+                state.state = UiState::ManualSave;
+                state.manual_saves.focus();
+            }
+            return Ok(EventResult::Redraw);
+        }
+        _ => (),
+    }
+
+    Ok(EventResult::NotHandled)
+}
+
+/// Actions that are only possible when the game list is focused.
+fn handle_game_list(event: &KeyEvent, state: &mut AppState) -> Result<EventResult> {
+    match event.code {
+        KeyCode::Down | KeyCode::Char('j') => {
+            state.games.next();
+            state.update_saves()?;
+            return Ok(EventResult::Redraw);
+        }
+        KeyCode::Up | KeyCode::Char('k') => {
+            state.games.previous();
+            state.update_saves()?;
+            return Ok(EventResult::Redraw);
+        }
+        _ => {}
+    }
+
+    Ok(EventResult::NotHandled)
+}
+
+/// Actions that are only possible when the autosave list is focused.
+fn handle_autosave_list(event: &KeyEvent, state: &mut AppState) -> Result<EventResult> {
+    match event.code {
+        KeyCode::Down | KeyCode::Char('j') => {
+            state.autosaves.next();
+            return Ok(EventResult::Redraw);
+        }
+        KeyCode::Up | KeyCode::Char('k') => {
+            state.autosaves.previous();
+            return Ok(EventResult::Redraw);
+        }
+        KeyCode::Enter => {
+            // Restore a autosave game.
+            if let Some(save) = state.autosaves.get_selected() {
+                let game = state.get_selected_game();
+                restore_save(&state.config, &game, &save)?;
+                state.ignore_changes.insert(game.clone(), Local::now());
+                state.log(&format!(
+                    "Restored savefile {} for {}",
+                    save.file_name, &game
+                ));
+                return Ok(EventResult::Redraw);
+            }
+        }
+        _ => {}
+    }
+
+    match event {
+        KeyEvent {
+            modifiers: KeyModifiers::CONTROL,
+            code: KeyCode::Down | KeyCode::Char('j') | KeyCode::Up | KeyCode::Char('k'),
+        } => {
+            // Moving up down while focus is on the autosave list should switch focus
+            // to the manual save list.
+            state.state = UiState::ManualSave;
+            state.manual_saves.focus();
+            return Ok(EventResult::Redraw);
+        }
+        _ => (),
+    }
+
+    Ok(EventResult::NotHandled)
+}
+
+/// Actions that are only possible when the manual save list is focused.
+fn handle_manual_save_list(event: &KeyEvent, state: &mut AppState) -> Result<EventResult> {
+    match event.code {
+        KeyCode::Down | KeyCode::Char('j') => {
+            state.autosaves.next();
+            return Ok(EventResult::Redraw);
+        }
+        KeyCode::Up | KeyCode::Char('k') => {
+            state.autosaves.previous();
+            return Ok(EventResult::Redraw);
+        }
+        KeyCode::Enter => {
+            // Restore a autosave game.
+            if let Some(save) = state.manual_saves.get_selected() {
+                let game = state.get_selected_game();
+                restore_save(&state.config, &game, &save)?;
+                state.ignore_changes.insert(game.clone(), Local::now());
+                state.log(&format!(
+                    "Restored savefile '{}' for {}",
+                    save.file_name, game
+                ));
+                return Ok(EventResult::Redraw);
+            }
+        }
+        _ => {}
+    }
+
+    match event {
+        KeyEvent {
+            modifiers: KeyModifiers::CONTROL,
+            code: KeyCode::Down | KeyCode::Char('j') | KeyCode::Up | KeyCode::Char('k'),
+        } => {
+            // Moving up down while focus is on the manual save list should switch focus
+            // to the autosave list. Only do this if autosaves are enabled.
+            if state.selected_game_has_autosave() {
+                state.state = UiState::Autosave;
+                state.autosaves.focus();
+                return Ok(EventResult::Redraw);
+            }
+        }
+        _ => (),
+    }
+
+    Ok(EventResult::NotHandled)
+}
+
 /// Handle all key combinations with the CTRL modifier
 fn handle_control(
     event: &KeyEvent,
@@ -187,18 +295,6 @@ fn handle_control(
                 _ => {}
             }
         }
-        KeyCode::Right | KeyCode::Char('l') => {
-            // Moving to the left right moves focus to the saves.
-            // If autosaves are enabled we focus it, otherwise we fallback to manual saves.
-            if state.selected_game_has_autosave() {
-                state.state = UiState::Autosave;
-                state.autosaves.focus();
-            } else {
-                state.state = UiState::ManualSave;
-                state.manual_saves.focus();
-            }
-            return Ok(EventResult::Redraw);
-        }
         KeyCode::Down | KeyCode::Char('j') | KeyCode::Up | KeyCode::Char('k') => {
             // Moving up down while focus is on the save lists should switch to the other
             // non-focused list.
@@ -219,8 +315,33 @@ fn handle_control(
             }
         }
 
-        _ => return Ok(EventResult::Ignore),
+        _ => return Ok(EventResult::NotHandled),
     }
 
-    Ok(EventResult::Ignore)
+    Ok(EventResult::NotHandled)
+}
+
+/// Handle all keys that exit the program.
+fn handle_exits(event: &KeyEvent, terminal: &mut Terminal) -> Result<EventResult> {
+    match event {
+        KeyEvent {
+            code: KeyCode::Char('c'),
+            modifiers: KeyModifiers::CONTROL,
+        } => {
+            // Classict CTRL+C should kill the program
+            restore_terminal(terminal)?;
+            return Ok(EventResult::Quit);
+        }
+        KeyEvent {
+            code: KeyCode::Char('q'),
+            modifiers: KeyModifiers::NONE,
+        } => {
+            // 'q' instantly exits the program.
+            restore_terminal(terminal)?;
+            return Ok(EventResult::Quit);
+        }
+        _ => (),
+    }
+
+    Ok(EventResult::NotHandled)
 }
