@@ -98,8 +98,21 @@ impl AppState {
         };
 
         // Get a list of all games in the config
-        let mut items = vec![];
-        for name in config.games.keys() {
+        let mut items = Vec::new();
+        let mut event_log = Vec::new();
+
+        for (name, config) in config.games.iter() {
+            // Make sure all savegame locations do exist.
+            // Ignore all games, where this isn't the case.
+            let savegame_location = config.savegame_location();
+            if !savegame_location.exists() {
+                event_log.push(format!(
+                    "Cannot find savegame location for game {}: {:?}",
+                    name, savegame_location
+                ));
+                continue;
+            }
+
             items.push(name.clone());
         }
         items.sort();
@@ -111,7 +124,7 @@ impl AppState {
             games: StatefulList::with_items(items),
             autosaves: SaveList::with_items(Vec::new()),
             manual_saves: SaveList::with_items(Vec::new()),
-            event_log: Vec::new(),
+            event_log,
             changes_detected: HashMap::new(),
             ignore_changes: HashMap::new(),
         };

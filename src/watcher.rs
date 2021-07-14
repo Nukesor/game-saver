@@ -56,6 +56,10 @@ impl Handler for Notifier {
 /// Convenience wrapper around `spawn_watcher` for multiple watchers.
 pub fn spawn_watchers(config: &Config, sender: &Sender<Update>) -> Result<()> {
     for (name, game_config) in &config.games {
+        if !game_config.savegame_location().exists() {
+            error!("Cannot find savegame_location for game {}", name);
+            continue;
+        }
         info!("Building watcher for {}", name);
         spawn_watcher(name, game_config, sender)?;
     }

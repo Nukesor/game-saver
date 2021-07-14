@@ -98,16 +98,6 @@ pub fn init_directories(config: &Config) -> Result<()> {
             bail!("Please adjust the default configuration file at ~/.config/game_saver.toml",);
         }
 
-        // Make sure all savegame locations do exist
-        let savegame_location = game_config.savegame_location();
-        if !savegame_location.exists() {
-            bail!(
-                "Cannot find savegame location for game {}: {:?}",
-                name,
-                savegame_location
-            );
-        }
-
         // Create the backup directory for this game.
         let game_backup_dir = config.save_dir(name);
         if !game_backup_dir.exists() {
