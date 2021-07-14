@@ -20,7 +20,7 @@ type Frame<'backend> = TuiFrame<'backend, CrosstermBackend<Stdout>>;
 /// This function doesn't change any state. Its sole purpose is to take the current state and
 /// render the terminal ui epending on the app state.
 pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
-    terminal.draw(|frame| {
+    terminal.draw(|mut frame| {
         // Create two horizontally split chunks with 1/3 to 2/3
         // The left chunk will be the list of games
         // The right chunk will be used to display save games
@@ -30,7 +30,8 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
             .split(frame.size());
 
         // Draw the list of games
-        draw_stateful_list(frame, main_chunks[0], &mut state.games, "Games", true);
+        let game_list = build_list(state.games.items.clone(), "Games", true);
+        frame.render_stateful_widget(game_list, main_chunks[0], &mut state.games.state);
 
         // Split the right side into three chunks
         // - Autosave list
@@ -47,95 +48,58 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
             )
             .split(main_chunks[1]);
 
-        // Draw the save lists
-        draw_save_list(
-            frame,
-            right_chunks[0],
-            &mut state.autosaves,
+        // Draw autosave list
+        let autosave_list = build_list(
+            state
+                .autosaves
+                .items
+                .iter()
+                .map(|save| save.file_name.clone())
+                .collect(),
             "Autosaves",
             matches!(state.state, UiState::Autosave(_)),
         );
-        draw_save_list(
-            frame,
-            right_chunks[1],
-            &mut state.manual_saves,
+        frame.render_stateful_widget(autosave_list, right_chunks[0], &mut state.autosaves.state);
+
+        // Draw manual save list
+        let manual_list = build_list(
+            state
+                .manual_saves
+                .items
+                .iter()
+                .map(|save| save.file_name.clone())
+                .collect(),
             "Saves",
             matches!(state.state, UiState::ManualSave(_)),
         );
-        draw_list(frame, right_chunks[2], &state.event_log, "Event log");
+        frame.render_stateful_widget(manual_list, right_chunks[1], &mut state.manual_saves.state);
+
+        // Draw event log
+        let event_log = build_list(state.event_log.clone(), "Event log", false);
+        frame.render_widget(event_log, right_chunks[2]);
 
         // Draw the input field in the middle of the screen, if we're expecting input
         if let UiState::Input(input) = &state.state {
-            // Get the vertical middle of the screen.
-            let overlay_vertical = Layout::default()
-                .constraints(
-                    [
-                        Constraint::Percentage(45),
-                        Constraint::Length(3),
-                        Constraint::Percentage(50),
-                    ]
-                    .as_ref(),
-                )
-                .split(frame.size());
-
-            // Get the horizontal middle of the screen.
-            let overlay_horizontal = Layout::default()
-                .direction(Direction::Horizontal)
-                .constraints(
-                    [
-                        Constraint::Ratio(1, 8),
-                        Constraint::Ratio(3, 4),
-                        Constraint::Ratio(1, 8),
-                    ]
-                    .as_ref(),
-                )
-                .split(overlay_vertical[1]);
+            let modal = get_modal(&mut frame);
 
             let paragraph = Paragraph::new(Text::from(input.input.clone()))
                 .block(Block::default().borders(Borders::ALL).title("Name"));
 
             // Clear the input block and draw the input field
-            frame.render_widget(Clear, overlay_horizontal[1]);
-            frame.render_widget(paragraph, overlay_horizontal[1]);
+            frame.render_widget(paragraph, modal);
         }
     })?;
 
     Ok(())
 }
 
-fn draw_list(frame: &mut Frame, chunk: Rect, items: &Vec<String>, title: &str) {
+fn build_list(items: Vec<String>, title: &str, highlight: bool) -> List {
     // Create the game selection.
-    let items: Vec<ListItem> = items
-        .iter()
-        .map(|name| ListItem::new(name.clone()))
-        .collect();
-
-    // Create a List from all list items and highlight the currently selected one
-    let list = List::new(items)
-        .block(Block::default().borders(Borders::ALL).title(title))
-        .highlight_symbol(">> ");
-
-    // Render the list
-    frame.render_widget(list, chunk);
-}
-
-fn draw_stateful_list(
-    frame: &mut Frame,
-    chunk: Rect,
-    stateful_list: &mut StatefulList,
-    title: &str,
-    highlight: bool,
-) {
-    // Create the game selection.
-    let items: Vec<ListItem> = stateful_list
-        .items
-        .iter()
-        .map(|name| ListItem::new(name.clone()))
-        .collect();
+    let items: Vec<ListItem> = items.into_iter().map(|name| ListItem::new(name)).collect();
 
     // Create a List from all list items and highlight the currently selected one
     let mut list = List::new(items)
-        .block(Block::default().borders(Borders::ALL).title(title))
+        .block(Block::default().borders(Borders::ALL).title(title.clone()))
         .highlight_symbol(">> ");
 
     // Only do highlight styling, if it's the focused window.
@@ -149,40 +113,40 @@ fn draw_stateful_list(
         );
     }
 
-    // Render the list
-    frame.render_stateful_widget(list, chunk, &mut stateful_list.state);
+    list
 }
 
-fn draw_save_list(
-    frame: &mut Frame,
-    chunk: Rect,
-    stateful_list: &mut SaveList,
-    title: &str,
-    highlight: bool,
-) {
-    // Create the game selection.
-    let items: Vec<ListItem> = stateful_list
-        .items
-        .iter()
-        .map(|save| ListItem::new(save.file_name.clone()))
-        .collect();
+/// Create a block with 3 height and 3/4 of the screen's width.
+/// The block is positioned in the middle of the screen and is used as an modal.
+/// We clear that block before returning it, that way you can directly write onto it.
+fn get_modal(frame: &mut Frame) -> Rect {
+    // Get the vertical middle of the screen.
+    let overlay_vertical = Layout::default()
+        .constraints(
+            [
+                Constraint::Percentage(45),
+                Constraint::Length(3),
+                Constraint::Percentage(50),
+            ]
+            .as_ref(),
+        )
+        .split(frame.size());
 
-    // Create a List from all list items and highlight the currently selected one
-    let mut list = List::new(items)
-        .block(Block::default().borders(Borders::ALL).title(title))
-        .highlight_symbol(">> ");
+    // Get the horizontal middle of the screen.
+    let overlay_horizontal = Layout::default()
+        .direction(Direction::Horizontal)
+        .constraints(
+            [
+                Constraint::Ratio(1, 8),
+                Constraint::Ratio(3, 4),
+                Constraint::Ratio(1, 8),
+            ]
+            .as_ref(),
+        )
+        .split(overlay_vertical[1]);
 
-    // Only do highlight styling, if it's the focused window.
-    // The selected item can still be identified by the highlight_symbol.
-    if highlight {
-        list = list.highlight_style(
-            Style::default()
-                .fg(Color::White)
-                .bg(Color::DarkGray)
-                .add_modifier(Modifier::BOLD),
-        );
-    }
+    // Clear the input block, so we can simply draw on it in the parent function.
+    frame.render_widget(Clear, overlay_horizontal[1]);
 
-    // Render the list
-    frame.render_stateful_widget(list, chunk, &mut stateful_list.state);
+    overlay_horizontal[1]
 }
