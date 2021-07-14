@@ -1,14 +1,14 @@
 use std::time::Duration;
 
-use anyhow::Result;
+use anyhow::{bail, Result};
 use chrono::Local;
 use crossterm::event::{poll, read, Event, KeyCode, KeyEvent, KeyModifiers};
 
-use crate::app::saves::restore_save;
+use crate::app::saves::{delete_save, rename_save, restore_save};
 
 use super::helper::terminal::{restore_terminal, Terminal};
 use super::saves::manually_save_game;
-use super::state::{AppState, Input, InputType, UiState};
+use super::state::{AppState, Input, InputType, PromptType, UiState};
 
 /// This enum signals the parent function, which actions should be taken.
 pub enum EventResult {
@@ -46,14 +46,10 @@ fn handle_key(
 ) -> Result<EventResult> {
     let current_ui_state = state.get_state();
 
-    if event.modifiers.contains(KeyModifiers::CONTROL) {
-        return handle_control(event, terminal, state, current_ui_state);
-    }
-
     // Run through strictly state-specific handlers.
     let mut result = match current_ui_state {
         UiState::Input(input) => return handle_input(event, state, input),
-        UiState::Prompt(_) => EventResult::NotHandled,
+        UiState::Prompt(prompt_type) => return handle_prompt(event, state, prompt_type),
         UiState::Games => handle_game_list(event, state)?,
         UiState::Autosave => handle_autosave_list(event, state)?,
         UiState::ManualSave => handle_manual_save_list(event, state)?,
@@ -89,14 +85,25 @@ fn handle_input(event: &KeyEvent, state: &mut AppState, mut input: Input) -> Res
         }
         KeyCode::Enter => {
             // Create a new save.
-            manually_save_game(&state.config, &input.game, &input.input)?;
-            state.log(&format!(
-                "New manual save for {} with name '{}'",
-                &input.game, &input.input
-            ));
-            state.pop_state()?;
-            state.update_manual_saves()?;
-            return Ok(EventResult::Redraw);
+            match input.input_type {
+                InputType::Create => {
+                    manually_save_game(&state.config, &input.game, &input.input)?;
+                    state.log(&format!(
+                        "New manual save for {} with name '{}'",
+                        &input.game, &input.input
+                    ));
+                    state.pop_state()?;
+                    state.update_manual_saves()?;
+                    return Ok(EventResult::Redraw);
+                }
+                InputType::Rename(save) => {
+                    state.push_state(UiState::Prompt(PromptType::Rename {
+                        save,
+                        new_name: input.input.clone(),
+                    }));
+                    return Ok(EventResult::Redraw);
+                }
+            }
         }
         KeyCode::Backspace => {
             // Remove a character from the name
@@ -116,51 +123,50 @@ fn handle_input(event: &KeyEvent, state: &mut AppState, mut input: Input) -> Res
     Ok(EventResult::Ignore)
 }
 
-fn handle_main_view(
+/// Handle y/n prompts and do the appropriate action, depending on the prompt type.
+fn handle_prompt(
     event: &KeyEvent,
-    terminal: &mut Terminal,
     state: &mut AppState,
+    prompt_type: PromptType,
 ) -> Result<EventResult> {
-    //handle_global(event, terminal, state, current_ui_state);
     match event.code {
-        KeyCode::Char('q') => {
-            // 'q' instantly exits the program.
-            restore_terminal(terminal)?;
-            return Ok(EventResult::Quit);
-        }
-        KeyCode::Char('a') => {
-            let game = state.get_selected_game();
-            // Create a new savegame for the current game.
-            state.push_state(UiState::Input(Input {
-                game,
-                input: String::new(),
-                input_type: InputType::Create,
-            }));
+        KeyCode::Char('n' | 'N') | KeyCode::Esc => {
+            // Exit the prompt and enter the previous state.
+            state.pop_state()?;
             return Ok(EventResult::Redraw);
         }
+        KeyCode::Char('y' | 'Y') => match prompt_type {
+            PromptType::Rename { save, new_name } => {
+                rename_save(&save, &new_name)?;
+                state.update_saves()?;
+                // Double pop the state, as we had to have an input beforehand.
+                state.pop_state()?;
+                state.pop_state()?;
+                return Ok(EventResult::Redraw);
+            }
+            PromptType::RenameOverwrite { save, new_name } => todo!(),
+            PromptType::CreateOverwrite { new_name, game } => todo!(),
+            PromptType::Delete { save } => {
+                delete_save(&save)?;
+                state.pop_state()?;
+                match state.state {
+                    UiState::Autosave => {
+                        state.update_autosaves()?;
+                        state.autosaves.focus();
+                    }
+                    UiState::ManualSave => {
+                        state.update_manual_saves()?;
+                        state.manual_saves.focus();
+                    }
+                    _ => bail!("Trying to delete when focus wasn't on a SaveList."),
+                }
+                return Ok(EventResult::Redraw);
+            }
+        },
         _ => {}
     }
 
-    match event {
-        KeyEvent {
-            modifiers: KeyModifiers::CONTROL,
-            code: KeyCode::Char('l'),
-        } => {
-            // Moving to the left moves focus to the save lists.
-            // If autosaves are enabled we focus it, otherwise we fallback to manual saves.
-            if state.selected_game_has_autosave() {
-                state.state = UiState::Autosave;
-                state.autosaves.focus();
-            } else {
-                state.state = UiState::ManualSave;
-                state.manual_saves.focus();
-            }
-            return Ok(EventResult::Redraw);
-        }
-        _ => (),
-    }
-
-    Ok(EventResult::NotHandled)
+    Ok(EventResult::Ignore)
 }
 
 /// Actions that are only possible when the game list is focused.
@@ -179,11 +185,51 @@ fn handle_game_list(event: &KeyEvent, state: &mut AppState) -> Result<EventResul
         _ => {}
     }
 
+    match event {
+        KeyEvent {
+            modifiers: KeyModifiers::CONTROL,
+            code: KeyCode::Char('l'),
+        } => {
+            // Moving to the right moves focus to the save lists.
+            // If autosaves are enabled we focus it, otherwise we fallback to manual saves.
+            if state.selected_game_has_autosave() {
+                state.state = UiState::Autosave;
+                state.autosaves.focus();
+            } else {
+                state.state = UiState::ManualSave;
+                state.manual_saves.focus();
+            }
+            return Ok(EventResult::Redraw);
+        }
+        _ => (),
+    }
+
     Ok(EventResult::NotHandled)
 }
 
 /// Actions that are only possible when the autosave list is focused.
 fn handle_autosave_list(event: &KeyEvent, state: &mut AppState) -> Result<EventResult> {
+    match event {
+        KeyEvent {
+            modifiers: KeyModifiers::CONTROL,
+            code: KeyCode::Down | KeyCode::Up | KeyCode::Char('j' | 'k'),
+        } => {
+            // Moving up down while focus is on the autosave list should switch focus
+            // to the manual save list.
+            state.state = UiState::ManualSave;
+            state.manual_saves.focus();
+            return Ok(EventResult::Redraw);
+        }
+        KeyEvent {
+            modifiers: KeyModifiers::CONTROL,
+            code: KeyCode::Left | KeyCode::Char('h'),
+        } => {
+            state.state = UiState::Games;
+            return Ok(EventResult::Redraw);
+        }
+        _ => (),
+    }
+
     match event.code {
         KeyCode::Down | KeyCode::Char('j') => {
             state.autosaves.next();
@@ -192,6 +238,24 @@ fn handle_autosave_list(event: &KeyEvent, state: &mut AppState) -> Result<EventR
         KeyCode::Up | KeyCode::Char('k') => {
             state.autosaves.previous();
             return Ok(EventResult::Redraw);
+        }
+        KeyCode::Delete | KeyCode::Char('d') => {
+            // Delete a autosave
+            if let Some(save) = state.autosaves.get_selected() {
+                state.push_state(UiState::Prompt(PromptType::Delete { save }));
+                return Ok(EventResult::Redraw);
+            }
+        }
+        KeyCode::Char('r') => {
+            // Delete a autosave
+            if let Some(save) = state.autosaves.get_selected() {
+                state.push_state(UiState::Input(Input {
+                    game: state.get_selected_game(),
+                    input: save.file_name.clone(),
+                    input_type: InputType::Rename(save.clone()),
+                }));
+                return Ok(EventResult::Redraw);
+            }
         }
         KeyCode::Enter => {
             // Restore a autosave game.
@@ -208,26 +272,34 @@ fn handle_autosave_list(event: &KeyEvent, state: &mut AppState) -> Result<EventR
         }
         _ => {}
     }
-
-    match event {
-        KeyEvent {
-            modifiers: KeyModifiers::CONTROL,
-            code: KeyCode::Down | KeyCode::Char('j') | KeyCode::Up | KeyCode::Char('k'),
-        } => {
-            // Moving up down while focus is on the autosave list should switch focus
-            // to the manual save list.
-            state.state = UiState::ManualSave;
-            state.manual_saves.focus();
-            return Ok(EventResult::Redraw);
-        }
-        _ => (),
-    }
-
     Ok(EventResult::NotHandled)
 }
 
 /// Actions that are only possible when the manual save list is focused.
 fn handle_manual_save_list(event: &KeyEvent, state: &mut AppState) -> Result<EventResult> {
+    match event {
+        KeyEvent {
+            modifiers: KeyModifiers::CONTROL,
+            code: KeyCode::Down | KeyCode::Up | KeyCode::Char('j' | 'k'),
+        } => {
+            // Moving up down while focus is on the manual save list should switch focus
+            // to the autosave list. Only do this if autosaves are enabled.
+            if state.selected_game_has_autosave() {
+                state.state = UiState::Autosave;
+                state.autosaves.focus();
+                return Ok(EventResult::Redraw);
+            }
+        }
+        KeyEvent {
+            modifiers: KeyModifiers::CONTROL,
+            code: KeyCode::Left | KeyCode::Char('h'),
+        } => {
+            state.state = UiState::Games;
+            return Ok(EventResult::Redraw);
+        }
+        _ => (),
+    }
+
     match event.code {
         KeyCode::Down | KeyCode::Char('j') => {
             state.autosaves.next();
@@ -253,69 +325,35 @@ fn handle_manual_save_list(event: &KeyEvent, state: &mut AppState) -> Result<Eve
         _ => {}
     }
 
-    match event {
-        KeyEvent {
-            modifiers: KeyModifiers::CONTROL,
-            code: KeyCode::Down | KeyCode::Char('j') | KeyCode::Up | KeyCode::Char('k'),
-        } => {
-            // Moving up down while focus is on the manual save list should switch focus
-            // to the autosave list. Only do this if autosaves are enabled.
-            if state.selected_game_has_autosave() {
-                state.state = UiState::Autosave;
-                state.autosaves.focus();
-                return Ok(EventResult::Redraw);
-            }
-        }
-        _ => (),
-    }
-
     Ok(EventResult::NotHandled)
 }
 
-/// Handle all key combinations with the CTRL modifier
-fn handle_control(
+/// Actions that can be taken, when any component of the main user interface is focused.
+/// -> No prompts are displayed.
+/// -> No input is requested.
+fn handle_main_view(
     event: &KeyEvent,
     terminal: &mut Terminal,
     state: &mut AppState,
-    current_ui_state: UiState,
 ) -> Result<EventResult> {
+    //handle_global(event, terminal, state, current_ui_state);
     match event.code {
-        KeyCode::Char('c') => {
-            // Classict CTRL+C should kill the program
+        KeyCode::Char('q') => {
+            // 'q' instantly exits the program.
             restore_terminal(terminal)?;
             return Ok(EventResult::Quit);
         }
-        KeyCode::Left | KeyCode::Char('h') => {
-            // Moving to the left moves focus to the game list.
-            match current_ui_state {
-                UiState::Autosave | UiState::ManualSave => {
-                    state.state = UiState::Games;
-                    return Ok(EventResult::Redraw);
-                }
-                _ => {}
-            }
+        KeyCode::Char('a') => {
+            let game = state.get_selected_game();
+            // Create a new savegame for the current game.
+            state.push_state(UiState::Input(Input {
+                game,
+                input: String::new(),
+                input_type: InputType::Create,
+            }));
+            return Ok(EventResult::Redraw);
         }
-        KeyCode::Down | KeyCode::Char('j') | KeyCode::Up | KeyCode::Char('k') => {
-            // Moving up down while focus is on the save lists should switch to the other
-            // non-focused list.
-            match current_ui_state {
-                UiState::ManualSave => {
-                    if state.selected_game_has_autosave() {
-                        state.state = UiState::Autosave;
-                        state.autosaves.focus();
-                        return Ok(EventResult::Redraw);
-                    }
-                }
-                UiState::Autosave => {
-                    state.state = UiState::ManualSave;
-                    state.manual_saves.focus();
-                    return Ok(EventResult::Redraw);
-                }
-                _ => (),
-            }
-        }
-
-        _ => return Ok(EventResult::NotHandled),
+        _ => {}
     }
 
     Ok(EventResult::NotHandled)

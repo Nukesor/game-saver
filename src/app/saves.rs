@@ -157,3 +157,27 @@ pub fn remove_all_children(path: &Path) -> Result<()> {
 
     Ok(())
 }
+
+/// Take an existing savefile and rename it.
+pub fn rename_save(save: &SaveFile, new_name: &str) -> Result<()> {
+    if !save.path.exists() || !save.path.is_file() {
+        bail!("Trying to rename non-existing file {:?}", &save.path);
+    }
+    let new_path = save
+        .path
+        .parent()
+        .expect("The save shouldn't be the filesystem root.");
+    std::fs::rename(&save.path, new_path.join(format!("{}.tar.zst", new_name)))?;
+
+    Ok(())
+}
+
+/// Take an existing savefile and rename it.
+pub fn delete_save(save: &SaveFile) -> Result<()> {
+    if !save.path.exists() || !save.path.is_file() {
+        bail!("Trying to delete non-existing file {:?}", &save.path);
+    }
+    std::fs::remove_file(&save.path)?;
+
+    Ok(())
+}

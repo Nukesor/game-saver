@@ -5,7 +5,7 @@ use chrono::{DateTime, Local};
 
 use super::helper::files::{get_archive_files, SaveFile};
 use super::helper::list::{SaveList, StatefulList};
-use crate::config::{Config, GameConfig};
+use crate::config::Config;
 
 /// This indicates the current focused part of the UI.
 #[derive(Clone, Debug)]
@@ -32,8 +32,6 @@ pub enum InputType {
     Create,
     /// Rename an existing save file.
     Rename(SaveFile),
-    /// Delete an existing save file.
-    Delete(SaveFile),
 }
 
 #[derive(Clone, Debug)]
@@ -47,9 +45,12 @@ pub enum PromptType {
         new_name: String,
     },
     CreateOverwrite {
-        input: String,
+        new_name: String,
         game: String,
-        config: GameConfig,
+    },
+    /// Should you delete an existing save?
+    Delete {
+        save: SaveFile,
     },
 }
 
@@ -90,7 +91,7 @@ impl AppState {
     pub fn new(config: &Config) -> Result<AppState> {
         // Get the very first game of the config. This will be auto-selected.
         // If no game exists, we just abort with an error message.
-        let first_game = if let Some(name) = config.games.keys().next() {
+        if let Some(name) = config.games.keys().next() {
             name.clone()
         } else {
             bail!("There must be at least one game in your config.");

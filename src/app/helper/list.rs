@@ -41,6 +41,10 @@ impl StatefulList {
     /// Select the next item in the list.
     /// If there are no more items, we start at the first item.
     pub fn next(&mut self) {
+        if self.items.is_empty() {
+            self.state.select(None);
+            return;
+        }
         let i = match self.state.selected() {
             Some(i) if i >= (self.items.len() - 1) => 0,
             Some(i) => i + 1,
@@ -52,6 +56,10 @@ impl StatefulList {
     /// Select the previous item in the list.
     /// If there are no more items, we go to the the last item of the list.
     pub fn previous(&mut self) {
+        if self.items.is_empty() {
+            self.state.select(None);
+            return;
+        }
         let i = match self.state.selected() {
             Some(i) if i == 0 => self.items.len() - 1,
             Some(i) => i - 1,
@@ -113,6 +121,10 @@ impl SaveList {
     /// Select the next item in the list.
     /// If there are no more items, we start at the first item.
     pub fn next(&mut self) {
+        if self.items.is_empty() {
+            self.state.select(None);
+            return;
+        }
         let i = match self.state.selected() {
             Some(i) if i >= (self.items.len() - 1) => 0,
             Some(i) => i + 1,
@@ -124,6 +136,10 @@ impl SaveList {
     /// Select the previous item in the list.
     /// If there are no more items, we go to the the last item of the list.
     pub fn previous(&mut self) {
+        if self.items.is_empty() {
+            self.state.select(None);
+            return;
+        }
         let i = match self.state.selected() {
             Some(i) if i == 0 => self.items.len() - 1,
             Some(i) => i - 1,

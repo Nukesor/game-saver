@@ -8,9 +8,8 @@ use tui::text::Text;
 use tui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph};
 use tui::Frame as TuiFrame;
 
-use crate::app::state::UiState;
+use crate::app::state::{PromptType, UiState};
 
-use super::helper::list::{SaveList, StatefulList};
 use super::helper::terminal::Terminal;
 use super::AppState;
 
@@ -82,8 +81,44 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
         if let UiState::Input(input) = &state.state {
             let modal = get_modal(&mut frame);
 
-            let paragraph = Paragraph::new(Text::from(input.input.clone()))
-                .block(Block::default().borders(Borders::ALL).title("Name"));
+            let paragraph = Paragraph::new(Text::from(input.input.clone())).block(
+                Block::default()
+                    .borders(Borders::ALL)
+                    .title("Savefile Name"),
+            );
+            frame.render_widget(paragraph, modal);
+        }
+
+        if let UiState::Prompt(prompt_type) = &state.state {
+            let message = match prompt_type {
+                PromptType::Delete { save } => {
+                    format!(
+                        "Delete the savefile '{}' for game {}",
+                        &save.file_name,
+                        state.get_selected_game()
+                    )
+                }
+                PromptType::Rename { save, new_name } => {
+                    format!("Rename the save '{}' to '{}'", &save.file_name, &new_name)
+                }
+                PromptType::RenameOverwrite { save, new_name } => {
+                    format!(
+                        "Do you really want to overwrite save '{}' with '{}'",
+                        &new_name, &save.file_name
+                    )
+                }
+                PromptType::CreateOverwrite { new_name, .. } => {
+                    format!("Do you really want to overwrite save '{}'", &new_name)
+                }
+            };
+
+            let text = Text::from(format!("{} (Y/n)", message));
+            let block = Block::default()
+                .borders(Borders::ALL)
+                .title("Are you sure?");
+            let paragraph = Paragraph::new(text).block(block);
+
+            let modal = get_modal(&mut frame);
             frame.render_widget(paragraph, modal);
         }
     })?;
