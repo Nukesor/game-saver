@@ -6,6 +6,7 @@ use crossterm::event::{poll, read, Event, KeyCode, KeyEvent, KeyModifiers};
 
 use crate::app::saves::{delete_save, rename_save, restore_save};
 
+use super::helper::list::Navigate;
 use super::helper::terminal::{restore_terminal, Terminal};
 use super::saves::manually_save_game;
 use super::state::{AppState, Input, InputType, PromptType, UiState};

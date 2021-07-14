@@ -4,7 +4,7 @@ use anyhow::{anyhow, bail, Context, Result};
 use chrono::{DateTime, Local};
 
 use super::helper::files::{get_archive_files, SaveFile};
-use super::helper::list::{SaveList, StatefulList};
+use super::helper::list::{Navigate, SaveList, StringList};
 use crate::config::Config;
 
 /// This indicates the current focused part of the UI.
@@ -61,7 +61,7 @@ pub struct AppState {
     pub config: Config,
 
     // All lists that are displayed in the app
-    pub games: StatefulList,
+    pub games: StringList,
     pub autosaves: SaveList,
     pub manual_saves: SaveList,
     /// This is a non-persisted event log, which is used to show the user performed actions.
@@ -121,7 +121,7 @@ impl AppState {
             config: config.clone(),
             state: UiState::Games,
             previous_states: Vec::new(),
-            games: StatefulList::with_items(items),
+            games: StringList::with_items(items),
             autosaves: SaveList::with_items(Vec::new()),
             manual_saves: SaveList::with_items(Vec::new()),
             event_log,
