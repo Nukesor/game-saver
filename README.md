@@ -11,6 +11,16 @@ This tool is designed to extend a game's save logic and not to replace it.
 - Create autosaves when files in the watched folder change.
 - Restore saves
 - Support for multiple games.
+- Rename and delete saves
+
+
+### How to use
+
+- Use `CTRL+[h|l|j|k]` or `CTRL+[left|right|up|down]` to navigate the windows.
+- `a` to create a new save for the currently selected game.
+- `r` to rename a selected savefile.
+- `d` to delete a selected savefile.
+- `ENTER` to restore a selected savefile.
 
 
 ### TODOS:

@@ -215,13 +215,7 @@ impl AppState {
     pub fn update_manual_saves(&mut self) -> Result<()> {
         let name = self.get_selected_game();
 
-        // Return early, if autosaves are disabled for the currently selected game.
-        let game_config = self.config.games.get(&name).unwrap();
-        if game_config.autosaves == 0 {
-            return Ok(());
-        }
-
-        let save_dir = self.config.backup_directory().join(name);
+        let save_dir = self.config.save_dir(&name);
         let saves = get_archive_files(&save_dir)?;
 
         self.manual_saves.items = saves;
