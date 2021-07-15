@@ -47,7 +47,7 @@ pub fn run(config: Config, receiver: Receiver<Update>) -> Result<()> {
     Ok(())
 }
 
-/// A simple encapsulation the main loop.
+/// A simple encapsulation of the main loop.
 ///
 /// This way, we can catch all errors from the app and restore the terminal before exiting the
 /// program. Otherwise we would have a broken terminal.

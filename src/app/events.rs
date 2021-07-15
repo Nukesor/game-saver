@@ -35,6 +35,7 @@ pub fn handle_events(terminal: &mut Terminal, state: &mut AppState) -> Result<Ev
 
     match read()? {
         Event::Key(event) => handle_key(&event, terminal, state),
+        Event::Resize(_, _) => Ok(EventResult::Redraw),
         _ => Ok(EventResult::NotHandled),
     }
 }
