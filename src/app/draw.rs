@@ -32,33 +32,46 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
         let game_list = build_list(state.games.items.clone(), "Games", true);
         frame.render_stateful_widget(game_list, main_chunks[0], &mut state.games.state);
 
-        // Split the right side into three chunks
-        // - Autosave list
+        let game_config = state.config.games.get(&state.get_selected_game()).unwrap();
+
+        // Split the right side into either two or three chunks
+        // - Autosave list -> Dependant on whether the selected game has autosaves enabled
         // - Normal save list
         // - Block that's used as input field.
-        let right_chunks = Layout::default()
-            .constraints(
-                [
-                    Constraint::Ratio(1, 3),
-                    Constraint::Ratio(1, 3),
-                    Constraint::Ratio(1, 3),
-                ]
-                .as_ref(),
-            )
-            .split(main_chunks[1]);
+        let (autosave_chunk, manual_chunk, event_log_chunk) = if game_config.autosaves != 0 {
+            let chunks = Layout::default()
+                .constraints(
+                    [
+                        Constraint::Ratio(1, 3),
+                        Constraint::Ratio(1, 3),
+                        Constraint::Ratio(1, 3),
+                    ]
+                    .as_ref(),
+                )
+                .split(main_chunks[1]);
 
-        // Draw autosave list
-        let autosave_list = build_list(
-            state
-                .autosaves
-                .items
-                .iter()
-                .map(|save| save.file_name.clone())
-                .collect(),
-            "Autosaves",
-            matches!(state.state, UiState::Autosave),
-        );
-        frame.render_stateful_widget(autosave_list, right_chunks[0], &mut state.autosaves.state);
+            (Some(chunks[0]), chunks[1], chunks[2])
+        } else {
+            let chunks = Layout::default()
+                .constraints([Constraint::Ratio(2, 3), Constraint::Ratio(1, 3)].as_ref())
+                .split(main_chunks[1]);
+            (None, chunks[0], chunks[1])
+        };
+
+        if let Some(chunk) = autosave_chunk {
+            // Draw autosave list
+            let autosave_list = build_list(
+                state
+                    .autosaves
+                    .items
+                    .iter()
+                    .map(|save| save.file_name.clone())
+                    .collect(),
+                "Autosaves",
+                matches!(state.state, UiState::Autosave),
+            );
+            frame.render_stateful_widget(autosave_list, chunk, &mut state.autosaves.state);
+        }
 
         // Draw manual save list
         let manual_list = build_list(
@@ -71,11 +84,11 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
             "Saves",
             matches!(state.state, UiState::ManualSave),
         );
-        frame.render_stateful_widget(manual_list, right_chunks[1], &mut state.manual_saves.state);
+        frame.render_stateful_widget(manual_list, manual_chunk, &mut state.manual_saves.state);
 
         // Draw event log
         let event_log = build_list(state.event_log.clone(), "Event log", false);
-        frame.render_widget(event_log, right_chunks[2]);
+        frame.render_widget(event_log, event_log_chunk);
 
         // Draw the input field in the middle of the screen, if we're expecting input
         if let UiState::Input(input) = &state.state {
