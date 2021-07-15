@@ -37,6 +37,10 @@ impl GameConfig {
     pub fn savegame_location(&self) -> PathBuf {
         PathBuf::from(tilde(&self.savegame_location).into_owned())
     }
+
+    pub fn has_autosaves(&self) -> bool {
+        self.autosaves != 0
+    }
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]

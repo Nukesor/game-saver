@@ -108,7 +108,7 @@ pub fn init_directories(config: &Config) -> Result<()> {
         }
 
         // Only create an autosave directory, if autosave is enabled for this game.
-        if game_config.autosaves == 0 {
+        if !game_config.has_autosaves() {
             continue;
         }
 

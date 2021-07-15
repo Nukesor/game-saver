@@ -31,7 +31,8 @@ pub fn handle_updates(state: &mut AppState, receiver: &Receiver<Update>) -> Resu
 /// If autosaves are enabled and no autosave-timeout is active schedule a save for the given game.
 pub fn receive_updates(state: &mut AppState, receiver: &Receiver<Update>) {
     while let Ok(update) = receiver.try_recv() {
-        if state.selected_game_has_autosave() {
+        let game_config = state.config.games.get(&update.game_name).unwrap();
+        if !game_config.has_autosaves() {
             continue;
         }
 
