@@ -1,5 +1,4 @@
 use anyhow::{Context, Result};
-use chrono::{Duration, Local};
 use crossbeam_channel::Receiver;
 use log::debug;
 
@@ -8,13 +7,14 @@ mod events;
 mod helper;
 mod saves;
 mod state;
+mod update;
 
 use self::draw::draw_ui;
 use self::helper::files::init_directories;
 use self::helper::terminal::Terminal;
 use self::state::AppState;
+use self::update::handle_updates;
 use crate::app::helper::terminal::restore_terminal;
-use crate::app::saves::autosave_game;
 use crate::config::Config;
 use crate::watcher::Update;
 
@@ -76,59 +76,4 @@ pub fn main_loop(
     }
 
     Ok(())
-}
-
-/// Process updates (filesystem changes) according to the current app state.
-///
-/// If enabled, filesystem changes will trigger autosaves.
-/// Updates will be ignored during save restoration.
-fn handle_updates(state: &mut AppState, receiver: &Receiver<Update>) -> Result<bool> {
-    let mut draw_scheduled = false;
-    // Go through all updates for changed files and set the update time to now.
-    while let Ok(update) = receiver.try_recv() {
-        let game_config = state.config.games.get(&update.game_name).unwrap();
-        if game_config.autosaves == 0 {
-            continue;
-        }
-
-        // Don't schedule a autosave, if we just restored a save for that game.
-        if state.ignore_changes.contains_key(&update.game_name) {
-            continue;
-        }
-
-        state
-            .changes_detected
-            .insert(update.game_name.clone(), update.time);
-    }
-
-    // Save all games whose save directory hasn't been touched for a few seconds, .
-    let watched_changes: Vec<String> = state
-        .changes_detected
-        .keys()
-        .map(|key| key.clone())
-        .collect();
-    for game_name in watched_changes.iter() {
-        let time = state.changes_detected.get(game_name).unwrap();
-        if (Local::now() - Duration::seconds(5)).gt(time) {
-            // We can create the autosave.
-            // Schedule a redraw and remove that update from our watchlist.
-            autosave_game(&state.config, &game_name)?;
-            state.log(&format!("Autosave created for {}", game_name));
-            state.update_autosaves()?;
-            draw_scheduled = true;
-            state.changes_detected.remove(game_name);
-        }
-    }
-
-    // Remove the ignore rule for file changes after a few seconds.
-    // We only have to lock this for a short amount of time, after the restore.
-    let ignore_changes: Vec<String> = state.ignore_changes.keys().map(|key| key.clone()).collect();
-    for game_name in ignore_changes.iter() {
-        let time = state.ignore_changes.get(game_name).unwrap();
-        if (Local::now() - Duration::seconds(1)).gt(time) {
-            state.ignore_changes.remove(game_name);
-        }
-    }
-
-    Ok(draw_scheduled)
 }

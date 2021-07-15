@@ -5,10 +5,19 @@ backup_directory = "~/.local/share/game_saver/"
 # The folder where the save files are located.
 savegame_location = "~/some/path/to/your/save/files"
 
-# The amount of autosave files you want to keep.
-# Old autosaves that exceed this limit will be deleted.
+# The amount of autosave slots you want to keep.
+# Once this limit is reached, the oldest autosave files will be deleted.
+#
 # Set to 0, if you want to disable.
 autosaves = 5
+
+# By default, game-saver saves the game everytime something changes on disk.
+# As this can be quite often, you can specify a timeout up to which all changes on disk will
+# be simply ignored.
+#
+# The timeout is specified in seconds.
+# Set to 0, to disable the timeout.
+autosave_timeout = 0
 
 # A list of glob patterns that should be ignored.
 # The paths should be relative to `savegame_location/`.

@@ -84,6 +84,10 @@ pub struct AppState {
     /// This is needed so we don't trigger saves when restoring saves.
     /// (As the restore is a change in the filesystem that get's detected).
     pub ignore_changes: HashMap<String, DateTime<Local>>,
+    /// This map is used to remember the last save of a game.
+    ///
+    /// We need to handle data to apply the autosave-timeout.
+    pub autosave_timeouts: HashMap<String, DateTime<Local>>,
 }
 
 impl AppState {
@@ -127,6 +131,7 @@ impl AppState {
             event_log,
             changes_detected: HashMap::new(),
             ignore_changes: HashMap::new(),
+            autosave_timeouts: HashMap::new(),
         };
         // Load the list of saves if we selected a game.
         state.update_saves()?;

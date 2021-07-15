@@ -14,10 +14,18 @@ static DEFAULT_CONFIG: &'static str = include_str!("../example_game_saver.toml")
 pub struct GameConfig {
     /// The folder where the save files are located.
     pub savegame_location: String,
-    /// The amount of autosave files you want to keep.
-    /// Old autosaves that exceed this limit will be deleted.
+    /// The amount of autosave slots you want to keep.
+    /// Once this limit is reached, the oldest autosave files will be deleted.
+    ///
     /// Set to 0, if you want to disable.
     pub autosaves: usize,
+    /// By default, game-saver saves the game everytime something changes on disk.
+    /// As this can be quite often, you can specify a timeout up to which all changes on disk will
+    /// be simply ignored.
+    ///
+    /// The timeout is specified in seconds.
+    /// Set to 0, to disable the timeout.
+    pub autosave_timeout: usize,
     /// A list of glob patterns that should be ignored.
     /// The paths should be relative to `savegame_location/`.
     ///
@@ -33,6 +41,7 @@ impl GameConfig {
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Config {
+    /// The directory where Game-saver will store the backups of your games' save files.
     pub backup_directory: String,
     pub games: HashMap<String, GameConfig>,
 }
