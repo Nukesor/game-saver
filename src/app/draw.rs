@@ -87,8 +87,8 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
         frame.render_stateful_widget(manual_list, manual_chunk, &mut state.manual_saves.state);
 
         // Draw event log
-        let event_log = build_list(state.event_log.clone(), "Event log", false);
-        frame.render_widget(event_log, event_log_chunk);
+        let event_log = build_list(state.event_logs.items.clone(), "Event log", false);
+        frame.render_stateful_widget(event_log, event_log_chunk, &mut state.event_logs.state);
 
         // Draw the input field in the middle of the screen, if we're expecting input
         if let UiState::Input(input) = &state.state {

@@ -65,7 +65,7 @@ pub struct AppState {
     pub autosaves: SaveList,
     pub manual_saves: SaveList,
     /// This is a non-persisted event log, which is used to show the user performed actions.
-    pub event_log: Vec<String>,
+    pub event_logs: StringList,
 
     // As we have an interactive UI, we have to do a lot of state management
     /// This represents the current active state.
@@ -103,14 +103,14 @@ impl AppState {
 
         // Get a list of all games in the config
         let mut items = Vec::new();
-        let mut event_log = Vec::new();
+        let mut event_logs = Vec::new();
 
         for (name, config) in config.games.iter() {
             // Make sure all savegame locations do exist.
             // Ignore all games, where this isn't the case.
             let savegame_location = config.savegame_location();
             if !savegame_location.exists() {
-                event_log.push(format!(
+                event_logs.push(format!(
                     "Cannot find savegame location for game {}: {:?}",
                     name, savegame_location
                 ));
@@ -128,7 +128,7 @@ impl AppState {
             games: StringList::with_items(items),
             autosaves: SaveList::with_items(Vec::new()),
             manual_saves: SaveList::with_items(Vec::new()),
-            event_log,
+            event_logs: StringList::with_items(event_logs),
             changes_detected: HashMap::new(),
             ignore_changes: HashMap::new(),
             autosave_timeouts: HashMap::new(),
@@ -180,7 +180,12 @@ impl AppState {
 
     pub fn log(&mut self, message: &str) {
         let prefix = Local::now().format("%H:%M:%S").to_string();
-        self.event_log.push(format!("{} - {}", prefix, message));
+        self.event_logs
+            .items
+            .push(format!("{} - {}", prefix, message));
+        self.event_logs
+            .state
+            .select(Some(self.event_logs.items.len() - 1));
     }
 
     /// Convenience wrapper, which calls [self.update_saves] and [self.update_autosaves].
