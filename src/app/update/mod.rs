@@ -41,11 +41,6 @@ pub fn receive_updates(state: &mut AppState, receiver: &Receiver<Update>) {
             continue;
         }
 
-        // Don't schedule a autosave, if there was a save and the timeout didn't finish yet.
-        if state.autosave_timeouts.contains_key(&update.game_name) {
-            continue;
-        }
-
         state
             .changes_detected
             .insert(update.game_name.clone(), update.time);
@@ -66,6 +61,11 @@ pub fn save_games(state: &mut AppState) -> Result<bool> {
         // Otherwise we might create a backup, while the game is still writing files.
         let time = state.changes_detected.get(game).unwrap();
         if (Local::now() - Duration::seconds(5)).lt(time) {
+            continue;
+        }
+
+        // Don't save, if the autosave timeout didn't finish yet.
+        if state.autosave_timeouts.contains_key(game) {
             continue;
         }
 
