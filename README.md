@@ -27,8 +27,5 @@ This tool is designed to extend a game's save logic and not to replace it.
 
 ### TODOS:
 
-- Refactor everything once the MVP is finished
-    * Think about generics for lists
 - Show timestamp floating on the right of the savegame lists
-- Add option to define timeout between autosaves. E.g. only save on changes every 10 mins.
 - Add how-to section, which explains how to use it.
