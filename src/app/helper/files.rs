@@ -12,7 +12,7 @@ use crate::config::Config;
 pub struct SaveFile {
     pub path: PathBuf,
     pub file_name: String,
-    pub created_at: DateTime<Local>,
+    pub last_modified: DateTime<Local>,
 }
 
 /// Return all paths and filenames of *.tar.zst files for a given directory.
@@ -29,11 +29,11 @@ pub fn get_archive_files(path: &Path) -> Result<Vec<SaveFile>> {
         let metadata = dir_entry
             .metadata()
             .context(format!("Couldn't read metadata of file {:?}", path))?;
-        let created_at = metadata
-            .created()
+        let last_modified = metadata
+            .modified()
             .context(format!("Couldn't read creation time of file {:?}", path))?;
-        let seconds = created_at.duration_since(UNIX_EPOCH)?.as_secs();
-        let created_at = Local.timestamp(seconds.try_into().unwrap_or(i64::MAX), 0);
+        let seconds = last_modified.duration_since(UNIX_EPOCH)?.as_secs();
+        let last_modified = Local.timestamp(seconds.try_into().unwrap_or(i64::MAX), 0);
 
         // It must be a file
         if !path.is_file() {
@@ -75,12 +75,12 @@ pub fn get_archive_files(path: &Path) -> Result<Vec<SaveFile>> {
         files.push(SaveFile {
             path,
             file_name,
-            created_at,
+            last_modified,
         });
     }
 
     // Sort by descending order -> b.cmp(a)
-    files.sort_by(|a, b| b.created_at.cmp(&a.created_at));
+    files.sort_by(|a, b| b.last_modified.cmp(&a.last_modified));
 
     Ok(files)
 }
