@@ -24,8 +24,8 @@ chrono-english = "0.1"
 clap = "3.0.0-beta.2"
 clap_generate = "3.0.0-beta.2"
 shell-escape = "0.1"
-tui = { version = "0.15", features = ["crossterm"] }
-crossterm = "0.19"
+tui = { version = "0.16", features = ["crossterm"] }
+crossterm = "0.20"
 log = "0.4"
 pretty_env_logger = "0.4"
 
