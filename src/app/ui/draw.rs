@@ -1,15 +1,16 @@
 use std::io::Stdout;
 
 use anyhow::Result;
-use tui::backend::CrosstermBackend;
-use tui::layout::{Constraint, Direction, Layout, Rect};
-use tui::style::{Color, Modifier, Style};
-use tui::text::Text;
-use tui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph};
-use tui::Frame as TuiFrame;
+use tui::{
+    backend::CrosstermBackend,
+    layout::{Constraint, Direction, Layout, Rect},
+    style::{Color, Modifier, Style},
+    text::Text,
+    widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
+    Frame as TuiFrame,
+};
 
-use super::state::AppState;
-use super::state::{PromptType, UiState};
+use super::state::{AppState, PromptType, UiState};
 use crate::app::helper::terminal::Terminal;
 
 type Frame<'backend> = TuiFrame<'backend, CrosstermBackend<Stdout>>;

@@ -5,10 +5,13 @@ use chrono::Local;
 use crossterm::event::{poll, read, Event, KeyCode, KeyEvent, KeyModifiers};
 
 use super::state::{AppState, Input, InputType, PromptType, UiState};
-use crate::app::helper::list::Navigate;
-use crate::app::helper::terminal::{restore_terminal, Terminal};
-use crate::app::saves::manually_save_game;
-use crate::app::saves::{delete_save, rename_save, restore_save};
+use crate::app::{
+    helper::{
+        list::Navigate,
+        terminal::{restore_terminal, Terminal},
+    },
+    saves::{delete_save, manually_save_game, rename_save, restore_save},
+};
 
 /// This enum signals the parent function, which actions should be taken.
 pub enum EventResult {

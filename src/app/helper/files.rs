@@ -1,7 +1,9 @@
-use std::convert::TryInto;
-use std::fs::{create_dir, create_dir_all, read_dir};
-use std::path::{Path, PathBuf};
-use std::time::UNIX_EPOCH;
+use std::{
+    convert::TryInto,
+    fs::{create_dir, create_dir_all, read_dir},
+    path::{Path, PathBuf},
+    time::UNIX_EPOCH,
+};
 
 use anyhow::{bail, Context, Result};
 use chrono::{DateTime, Local, TimeZone};

@@ -7,8 +7,10 @@ use std::{
 use anyhow::{anyhow, bail, Context, Result};
 use chrono::Local;
 
-use super::helper::files::{get_archive_files, SaveFile};
-use crate::config::Config;
+use crate::{
+    app::helper::files::{get_archive_files, SaveFile},
+    config::Config,
+};
 
 /// A wrapper around [save_game], which handles the cycling of autosaves.
 pub fn autosave_game(config: &Config, game: &str) -> Result<()> {

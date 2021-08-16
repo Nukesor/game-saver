@@ -1,7 +1,4 @@
-use std::collections::HashMap;
-use std::fs::File;
-use std::io::prelude::*;
-use std::path::PathBuf;
+use std::{collections::HashMap, fs::File, io::prelude::*, path::PathBuf};
 
 use anyhow::{Context, Result};
 use serde_derive::{Deserialize, Serialize};

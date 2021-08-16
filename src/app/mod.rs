@@ -7,15 +7,19 @@ mod saves;
 mod ui;
 mod update;
 
-use self::helper::files::init_directories;
-use self::helper::terminal::Terminal;
-use self::ui::draw::draw_ui;
-use self::ui::events::{handle_events, EventResult};
-use self::ui::state::AppState;
-use self::update::handle_updates;
-use crate::app::helper::terminal::restore_terminal;
-use crate::config::Config;
-use crate::watcher::Update;
+use self::{
+    helper::{
+        files::init_directories,
+        terminal::{restore_terminal, Terminal},
+    },
+    ui::{
+        draw::draw_ui,
+        events::{handle_events, EventResult},
+        state::AppState,
+    },
+    update::handle_updates,
+};
+use crate::{config::Config, watcher::Update};
 
 /// Run the app.
 ///

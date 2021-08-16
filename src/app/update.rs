@@ -4,8 +4,7 @@ use anyhow::Result;
 use chrono::{Duration, Local};
 use crossbeam_channel::Receiver;
 
-use super::saves::autosave_game;
-use super::ui::state::AppState;
+use super::{saves::autosave_game, ui::state::AppState};
 use crate::watcher::Update;
 
 /// Process updates (filesystem changes) according to the current app state.

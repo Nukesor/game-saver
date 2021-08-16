@@ -1,13 +1,12 @@
 use std::io::{self, Stdout};
 
 use anyhow::{Context, Result};
-use crossterm::event::{DisableMouseCapture, EnableMouseCapture};
-use crossterm::execute;
-use crossterm::terminal::{
-    disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen,
+use crossterm::{
+    event::{DisableMouseCapture, EnableMouseCapture},
+    execute,
+    terminal::{disable_raw_mode, enable_raw_mode, EnterAlternateScreen, LeaveAlternateScreen},
 };
-use tui::backend::CrosstermBackend;
-use tui::Terminal as TuiTerminal;
+use tui::{backend::CrosstermBackend, Terminal as TuiTerminal};
 
 pub type Terminal = TuiTerminal<CrosstermBackend<Stdout>>;
 
