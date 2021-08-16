@@ -2,17 +2,16 @@ use anyhow::{Context, Result};
 use crossbeam_channel::Receiver;
 use log::debug;
 
-mod draw;
-mod events;
 mod helper;
 mod saves;
-mod state;
+mod ui;
 mod update;
 
-use self::draw::draw_ui;
 use self::helper::files::init_directories;
 use self::helper::terminal::Terminal;
-use self::state::AppState;
+use self::ui::draw::draw_ui;
+use self::ui::events::{handle_events, EventResult};
+use self::ui::state::AppState;
 use self::update::handle_updates;
 use crate::app::helper::terminal::restore_terminal;
 use crate::config::Config;
@@ -59,9 +58,9 @@ pub fn main_loop(
     loop {
         let mut draw_scheduled = false;
 
-        match events::handle_events(terminal, state)? {
-            events::EventResult::Redraw => draw_scheduled = true,
-            events::EventResult::Quit => break,
+        match handle_events(terminal, state)? {
+            EventResult::Redraw => draw_scheduled = true,
+            EventResult::Quit => break,
             _ => (),
         }
         if handle_updates(state, &receiver)? {

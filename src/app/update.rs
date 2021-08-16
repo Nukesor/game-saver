@@ -4,8 +4,8 @@ use anyhow::Result;
 use chrono::{Duration, Local};
 use crossbeam_channel::Receiver;
 
-use super::state::AppState;
-use crate::app::saves::autosave_game;
+use super::saves::autosave_game;
+use super::ui::state::AppState;
 use crate::watcher::Update;
 
 /// Process updates (filesystem changes) according to the current app state.
@@ -47,7 +47,7 @@ pub fn receive_updates(state: &mut AppState, receiver: &Receiver<Update>) {
     }
 }
 
-/// Save all games whose save directory hasn't been touched for a few seconds, .
+/// Save all games whose save directory hasn't been touched for a few seconds.
 pub fn save_games(state: &mut AppState) -> Result<bool> {
     let mut draw_scheduled = false;
     let watched_changes: Vec<String> = state

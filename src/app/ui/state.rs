@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use anyhow::{anyhow, bail, Context, Result};
 use chrono::{DateTime, Local};
 
-use super::helper::files::{get_archive_files, SaveFile};
-use super::helper::list::{Navigate, SaveList, StringList};
+use crate::app::helper::files::{get_archive_files, SaveFile};
+use crate::app::helper::list::{Navigate, SaveList, StringList};
 use crate::config::Config;
 
 /// This indicates the current focused part of the UI.

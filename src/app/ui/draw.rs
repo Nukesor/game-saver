@@ -8,10 +8,9 @@ use tui::text::Text;
 use tui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph};
 use tui::Frame as TuiFrame;
 
-use crate::app::state::{PromptType, UiState};
-
-use super::helper::terminal::Terminal;
-use super::AppState;
+use super::state::AppState;
+use super::state::{PromptType, UiState};
+use crate::app::helper::terminal::Terminal;
 
 type Frame<'backend> = TuiFrame<'backend, CrosstermBackend<Stdout>>;
 
