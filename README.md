@@ -24,6 +24,19 @@ This tool is designed to extend a game's save logic and not to replace it.
 - `d` to delete a selected savefile.
 - `ENTER` to restore a selected savefile.
 
+### Installation guide
+
+**This tool is build for Unix Systems**
+
+1. Install the Rust toolchain, `stable` is ensured to work.
+2. Clone and install the game:
+    ```sh
+    git clone git@github.com:Nukesor/game-saver.git
+    cd game-saver
+    cargo install --locked --path .
+    ```
+3. Either copy the binary in `~/.cargo/bin/` somewhere your executable live, or add it to your `$PATH`.
+
 
 ### TODOS:
 
