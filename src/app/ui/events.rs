@@ -223,7 +223,7 @@ fn handle_game_list(event: &KeyEvent, state: &mut AppState) -> Result<EventResul
     match event {
         KeyEvent {
             modifiers: KeyModifiers::CONTROL,
-            code: KeyCode::Char('l'),
+            code: KeyCode::Char('l') | KeyCode::Right,
         } => {
             // Moving to the right moves focus to the save lists.
             // If autosaves are enabled we focus it, otherwise we fallback to manual saves.
