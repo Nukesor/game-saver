@@ -26,6 +26,8 @@ This tool is designed to extend a game's save logic and not to replace it.
 
 ### Installation guide
 
+- This tool uses the `tar` and `zstd` commandline tools for archiving and compression.
+
 **This tool is build for Unix Systems**
 
 1. Install the Rust toolchain, `stable` is ensured to work.
