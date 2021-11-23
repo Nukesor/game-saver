@@ -69,7 +69,7 @@ pub fn save_games(state: &mut AppState) -> Result<bool> {
         }
 
         // We can create the autosave.
-        autosave_game(&state.config, &game)?;
+        autosave_game(&state.config, game)?;
         state.log(&format!("Autosave created for {}", game));
         state.update_autosaves()?;
 

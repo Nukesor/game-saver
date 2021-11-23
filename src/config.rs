@@ -4,7 +4,7 @@ use anyhow::{Context, Result};
 use serde_derive::{Deserialize, Serialize};
 use shellexpand::tilde;
 
-static DEFAULT_CONFIG: &'static str = include_str!("../example_game_saver.toml");
+static DEFAULT_CONFIG: &str = include_str!("../example_game_saver.toml");
 
 /// The config for one game
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -69,7 +69,7 @@ impl Config {
 
         // No config exists yet. Create a default config and persist it onto disk.
         let mut file = File::create(&path)?;
-        file.write_all(&DEFAULT_CONFIG.as_bytes())?;
+        file.write_all(DEFAULT_CONFIG.as_bytes())?;
 
         // Recursively load config, now that we made sure it exists.
         let config = Config::new(&Some(path))?;

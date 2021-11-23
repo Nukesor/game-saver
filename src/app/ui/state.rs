@@ -155,10 +155,12 @@ impl AppState {
 
     /// We go back to the previous UIState.
     pub fn pop_state(&mut self) -> Result<()> {
-        let previous = self.previous_states.pop().ok_or(anyhow!(
-            "Tried to go back to previous state from {:?}, but there is no previous state.",
-            self.state
-        ))?;
+        let previous = self.previous_states.pop().ok_or_else(|| {
+            anyhow!(
+                "Tried to go back to previous state from {:?}, but there is no previous state.",
+                self.state
+            )
+        })?;
         self.state = previous;
 
         Ok(())

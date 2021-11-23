@@ -220,23 +220,21 @@ fn handle_game_list(event: &KeyEvent, state: &mut AppState) -> Result<EventResul
         _ => {}
     }
 
-    match event {
-        KeyEvent {
-            modifiers: KeyModifiers::CONTROL,
-            code: KeyCode::Char('l') | KeyCode::Right,
-        } => {
-            // Moving to the right moves focus to the save lists.
-            // If autosaves are enabled we focus it, otherwise we fallback to manual saves.
-            if state.selected_game_has_autosave() {
-                state.state = UiState::Autosave;
-                state.autosaves.focus();
-            } else {
-                state.state = UiState::ManualSave;
-                state.manual_saves.focus();
-            }
-            return Ok(EventResult::Redraw);
+    if let KeyEvent {
+        modifiers: KeyModifiers::CONTROL,
+        code: KeyCode::Char('l') | KeyCode::Right,
+    } = event
+    {
+        // Moving to the right moves focus to the save lists.
+        // If autosaves are enabled we focus it, otherwise we fallback to manual saves.
+        if state.selected_game_has_autosave() {
+            state.state = UiState::Autosave;
+            state.autosaves.focus();
+        } else {
+            state.state = UiState::ManualSave;
+            state.manual_saves.focus();
         }
-        _ => (),
+        return Ok(EventResult::Redraw);
     }
 
     Ok(EventResult::NotHandled)
@@ -287,7 +285,7 @@ fn handle_autosave_list(event: &KeyEvent, state: &mut AppState) -> Result<EventR
                 state.push_state(UiState::Input(Input {
                     game: state.get_selected_game(),
                     input: save.file_name.clone(),
-                    input_type: InputType::Rename(save.clone()),
+                    input_type: InputType::Rename(save),
                 }));
                 return Ok(EventResult::Redraw);
             }
@@ -357,7 +355,7 @@ fn handle_manual_save_list(event: &KeyEvent, state: &mut AppState) -> Result<Eve
                 state.push_state(UiState::Input(Input {
                     game: state.get_selected_game(),
                     input: save.file_name.clone(),
-                    input_type: InputType::Rename(save.clone()),
+                    input_type: InputType::Rename(save),
                 }));
                 return Ok(EventResult::Redraw);
             }

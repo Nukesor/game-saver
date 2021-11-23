@@ -67,10 +67,9 @@ fn save_game(source: &Path, dest: &Path) -> Result<()> {
     } else {
         source
     };
-    let source_filename = source.file_name().ok_or(anyhow!(
-        "Failed to get filename from savegame_location {:?}",
-        source
-    ))?;
+    let source_filename = source
+        .file_name()
+        .ok_or_else(|| anyhow!("Failed to get filename from savegame_location {:?}", source))?;
 
     let args = vec![
         "-I".into(),

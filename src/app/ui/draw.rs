@@ -107,7 +107,7 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
                 .borders(Borders::ALL)
                 .title("Are you sure?");
 
-            let text = get_prompt_text(&prompt_type, state.get_selected_game());
+            let text = get_prompt_text(prompt_type, state.get_selected_game());
             let paragraph = Paragraph::new(text).block(block);
 
             let modal = get_modal(&mut frame);
@@ -120,7 +120,7 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
 
 fn build_list(items: Vec<String>, title: &str, highlight: bool) -> List {
     // Create the game selection.
-    let items: Vec<ListItem> = items.into_iter().map(|name| ListItem::new(name)).collect();
+    let items: Vec<ListItem> = items.into_iter().map(ListItem::new).collect();
 
     // Create a List from all list items and highlight the currently selected one
     let mut list = List::new(items)
