@@ -1,5 +1,5 @@
 use anyhow::{Context, Result};
-use clap::Clap;
+use clap::Parser;
 use crossbeam_channel::unbounded;
 use log::{info, LevelFilter};
 use pretty_env_logger::formatted_builder;

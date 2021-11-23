@@ -1,8 +1,8 @@
 use std::path::PathBuf;
 
-use clap::Clap;
+use clap::Parser;
 
-#[derive(Clap, Debug)]
+#[derive(Parser, Debug)]
 #[clap(
     name = "A Game Saver",
     about = "Save your games",
