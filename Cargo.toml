@@ -16,15 +16,14 @@ dirs = "4"
 crossbeam-channel = "0.5"
 shellexpand = "2"
 
-better-panic = "0.2"
+better-panic = "0.3"
 anyhow = "1"
 chrono = { version="0.4", features=["serde"] }
 chrono-english = "0.1"
 
-clap = "3.0.0-beta.2"
-clap_generate = "3.0.0-beta.2"
+clap = { version="3", features=["derive", "cargo"] }
 shell-escape = "0.1"
-tui = { version="0.16", features=["crossterm"] }
+tui = { version="0.17", features=["crossterm"] }
 crossterm = "0.22"
 log = "0.4"
 pretty_env_logger = "0.4"
