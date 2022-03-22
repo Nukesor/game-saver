@@ -18,13 +18,13 @@ shellexpand = "2"
 
 better-panic = "0.3"
 anyhow = "1"
-chrono = { version="0.4", features=["serde"] }
+chrono = { version = "0.4", features = ["serde"] }
 chrono-english = "0.1"
 
-clap = { version="3", features=["derive", "cargo"] }
+clap = { version = "3", features = ["derive", "cargo"] }
 shell-escape = "0.1"
-tui = { version="0.17", features=["crossterm"] }
-crossterm = "0.22"
+tui = { version = "0.17", features = ["crossterm"] }
+crossterm = "0.23"
 log = "0.4"
 pretty_env_logger = "0.4"
 
