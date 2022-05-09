@@ -23,7 +23,7 @@ chrono-english = "0.1"
 
 clap = { version = "3", features = ["derive", "cargo"] }
 shell-escape = "0.1"
-tui = { version = "0.17", features = ["crossterm"] }
+tui = { version = "0.18", features = ["crossterm"] }
 crossterm = "0.23"
 log = "0.4"
 pretty_env_logger = "0.4"
