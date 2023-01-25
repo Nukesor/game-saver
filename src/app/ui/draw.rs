@@ -19,7 +19,7 @@ type Frame<'backend> = TuiFrame<'backend, CrosstermBackend<Stdout>>;
 /// This function doesn't change any state. Its sole purpose is to take the current state and
 /// render the terminal ui epending on the app state.
 pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
-    terminal.draw(|mut frame| {
+    terminal.draw(|frame| {
         // Create two horizontally split chunks with 1/3 to 2/3
         // The left chunk will be the list of games
         // The right chunk will be used to display save games
@@ -92,7 +92,7 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
 
         // Draw the input field in the middle of the screen, if we're expecting input
         if let UiState::Input(input) = &state.state {
-            let modal = get_modal(&mut frame);
+            let modal = get_modal(frame);
 
             let paragraph = Paragraph::new(Text::from(input.input.clone())).block(
                 Block::default()
@@ -110,7 +110,7 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
             let text = get_prompt_text(prompt_type, state.get_selected_game());
             let paragraph = Paragraph::new(text).block(block);
 
-            let modal = get_modal(&mut frame);
+            let modal = get_modal(frame);
             frame.render_widget(paragraph, modal);
         }
     })?;
@@ -124,7 +124,7 @@ fn build_list(items: Vec<String>, title: &str, highlight: bool) -> List {
 
     // Create a List from all list items and highlight the currently selected one
     let mut list = List::new(items)
-        .block(Block::default().borders(Borders::ALL).title(title.clone()))
+        .block(Block::default().borders(Borders::ALL).title(title))
         .highlight_symbol(">> ");
 
     // Only do highlight styling, if it's the focused window.
@@ -198,5 +198,5 @@ fn get_prompt_text(prompt_type: &PromptType, game: String) -> Text {
         }
     };
 
-    Text::from(format!("{} (Y/n)", message))
+    Text::from(format!("{message} (Y/n)"))
 }

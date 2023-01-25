@@ -115,8 +115,7 @@ impl AppState {
             let savegame_location = config.savegame_location();
             if !savegame_location.exists() {
                 event_logs.push(format!(
-                    "Cannot find savegame location for game {}: {:?}",
-                    name, savegame_location
+                    "Cannot find savegame location for game {name}: {savegame_location:?}"
                 ));
                 continue;
             }
@@ -186,9 +185,7 @@ impl AppState {
 
     pub fn log(&mut self, message: &str) {
         let prefix = Local::now().format("%H:%M:%S").to_string();
-        self.event_logs
-            .items
-            .push(format!("{} - {}", prefix, message));
+        self.event_logs.items.push(format!("{prefix} - {message}"));
         self.event_logs
             .state
             .select(Some(self.event_logs.items.len() - 1));

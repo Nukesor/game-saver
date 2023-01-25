@@ -6,7 +6,7 @@ use std::{
 };
 
 use anyhow::{bail, Context, Result};
-use chrono::{DateTime, Local, TimeZone};
+use chrono::{DateTime, Local, LocalResult, TimeZone};
 
 use crate::config::Config;
 
@@ -22,20 +22,26 @@ pub struct SaveFile {
 pub fn get_archive_files(path: &Path) -> Result<Vec<SaveFile>> {
     let mut files = Vec::new();
 
-    let dir_files = read_dir(path).context(format!("Couldn't read directory {:?}", path))?;
+    let dir_files = read_dir(path).context(format!("Couldn't read directory {path:?}"))?;
     for dir_entry in dir_files {
-        let dir_entry = dir_entry.context(format!("Couldn't get dir entry in {:?}", path))?;
+        let dir_entry = dir_entry.context(format!("Couldn't get dir entry in {path:?}"))?;
         let path = dir_entry.path();
 
         // Extract a DateTime<Local> from the file's creation date
         let metadata = dir_entry
             .metadata()
-            .context(format!("Couldn't read metadata of file {:?}", path))?;
+            .context(format!("Couldn't read metadata of file {path:?}"))?;
         let last_modified = metadata
             .modified()
-            .context(format!("Couldn't read creation time of file {:?}", path))?;
+            .context(format!("Couldn't read creation time of file {path:?}"))?;
         let seconds = last_modified.duration_since(UNIX_EPOCH)?.as_secs();
-        let last_modified = Local.timestamp(seconds.try_into().unwrap_or(i64::MAX), 0);
+        let last_modified_result = Local.timestamp_opt(seconds.try_into().unwrap_or(i64::MAX), 0);
+
+        let last_modified = match last_modified_result {
+            LocalResult::None => panic!("Failed to get last modified date of file at {path:?}."),
+            LocalResult::Single(today) => today,
+            LocalResult::Ambiguous(today, _) => today,
+        };
 
         // It must be a file
         if !path.is_file() {
@@ -103,10 +109,8 @@ pub fn init_directories(config: &Config) -> Result<()> {
         // Create the backup directory for this game.
         let game_backup_dir = config.save_dir(name);
         if !game_backup_dir.exists() {
-            create_dir(&game_backup_dir).context(format!(
-                "Failed to create backup directory for game {}",
-                name
-            ))?;
+            create_dir(&game_backup_dir)
+                .context(format!("Failed to create backup directory for game {name}",))?;
         }
 
         // Only create an autosave directory, if autosave is enabled for this game.
@@ -117,8 +121,7 @@ pub fn init_directories(config: &Config) -> Result<()> {
         let autosave_dir = config.autosave_dir(name);
         if !autosave_dir.exists() {
             create_dir(autosave_dir).context(format!(
-                "Failed to create autosave directory for game {}",
-                name
+                "Failed to create autosave directory for game {name}",
             ))?;
         }
     }

@@ -49,11 +49,7 @@ pub fn receive_updates(state: &mut AppState, receiver: &Receiver<Update>) {
 /// Save all games whose save directory hasn't been touched for a few seconds.
 pub fn save_games(state: &mut AppState) -> Result<bool> {
     let mut draw_scheduled = false;
-    let watched_changes: Vec<String> = state
-        .changes_detected
-        .keys()
-        .map(|key| key.clone())
-        .collect();
+    let watched_changes: Vec<String> = state.changes_detected.keys().cloned().collect();
 
     for game in watched_changes.iter() {
         // Make sure there weren't any changes for a few seconds.
@@ -70,7 +66,7 @@ pub fn save_games(state: &mut AppState) -> Result<bool> {
 
         // We can create the autosave.
         autosave_game(&state.config, game)?;
-        state.log(&format!("Autosave created for {}", game));
+        state.log(&format!("Autosave created for {game}"));
         state.update_autosaves()?;
 
         // Set a autosave timeout, if it is specified for the current game.
@@ -93,7 +89,7 @@ pub fn save_games(state: &mut AppState) -> Result<bool> {
 pub fn remove_ignored_changes(state: &mut AppState) {
     let ignored_duration = Duration::seconds(5);
 
-    let games: Vec<String> = state.ignore_changes.keys().map(|key| key.clone()).collect();
+    let games: Vec<String> = state.ignore_changes.keys().cloned().collect();
 
     for game in games.iter() {
         let time = state.ignore_changes.get(game).unwrap();
@@ -108,11 +104,7 @@ pub fn remove_ignored_changes(state: &mut AppState) {
 /// Remove the ignore rule for file changes after a few seconds.
 /// We only have to lock this for a short amount of time, after the restore.
 pub fn remove_autosave_timeouts(state: &mut AppState) {
-    let games: Vec<String> = state
-        .autosave_timeouts
-        .keys()
-        .map(|key| key.clone())
-        .collect();
+    let games: Vec<String> = state.autosave_timeouts.keys().cloned().collect();
 
     for game in games.iter() {
         let game_config = state.config.games.get(game).unwrap();

@@ -31,14 +31,14 @@ pub fn autosave_game(config: &Config, game: &str) -> Result<()> {
         }
 
         let path = save_to_delete.path;
-        remove_file(&path).context(format!("Failed to remove old autosave: {:?}", path))?;
+        remove_file(&path).context(format!("Failed to remove old autosave: {path:?}"))?;
     }
 
     let file_name = Local::now()
         .format("autosave_%Y-%m-%d_%H-%M-%S.tar.zst")
         .to_string();
 
-    let autosave_path = autosave_dir.join(&file_name);
+    let autosave_path = autosave_dir.join(file_name);
     save_game(&game_config.savegame_location(), &autosave_path)
         .context("Failed to create autosave")?;
 
@@ -50,9 +50,9 @@ pub fn manually_save_game(config: &Config, game: &str, name: &str) -> Result<()>
     let save_dir = config.save_dir(game);
     let game_config = config.games.get(game).unwrap();
 
-    let file_name = format!("{}.tar.zst", name);
+    let file_name = format!("{name}.tar.zst");
 
-    let save_path = save_dir.join(&file_name);
+    let save_path = save_dir.join(file_name);
     save_game(&game_config.savegame_location(), &save_path)
         .context("Failed to create manual save")?;
 
@@ -85,7 +85,7 @@ fn save_game(source: &Path, dest: &Path) -> Result<()> {
         .args(&args)
         .current_dir(cwd)
         .output()
-        .context(format!("Failed to spawn tar command: tar {:?}", args))?;
+        .context(format!("Failed to spawn tar command: tar {args:?}"))?;
 
     if !output.status.success() {
         bail!(
@@ -127,7 +127,7 @@ pub fn restore_save(config: &Config, game_name: &str, save: &SaveFile) -> Result
         .args(&args)
         .current_dir(cwd)
         .output()
-        .context(format!("Failed to spawn tar command: tar {:?}", args))?;
+        .context(format!("Failed to spawn tar command: tar {args:?}"))?;
 
     if !output.status.success() {
         bail!(
@@ -145,9 +145,9 @@ pub fn restore_save(config: &Config, game_name: &str, save: &SaveFile) -> Result
 /// We remove all files in a `savegame_location` before untarring.
 /// That way we ensure that no artifacts from old or newer saves remain.
 pub fn remove_all_children(path: &Path) -> Result<()> {
-    let dir_files = read_dir(path).context(format!("Couldn't read directory {:?}", path))?;
+    let dir_files = read_dir(path).context(format!("Couldn't read directory {path:?}"))?;
     for dir_entry in dir_files {
-        let dir_entry = dir_entry.context(format!("Couldn't get dir entry in {:?}", path))?;
+        let dir_entry = dir_entry.context(format!("Couldn't get dir entry in {path:?}"))?;
         let path = dir_entry.path();
         if path.is_dir() {
             remove_dir_all(&path)?;
@@ -168,7 +168,7 @@ pub fn rename_save(save: &SaveFile, new_name: &str) -> Result<()> {
         .path
         .parent()
         .expect("The save shouldn't be the filesystem root.");
-    std::fs::rename(&save.path, new_path.join(format!("{}.tar.zst", new_name)))?;
+    std::fs::rename(&save.path, new_path.join(format!("{new_name}.tar.zst")))?;
 
     Ok(())
 }
