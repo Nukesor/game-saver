@@ -1,6 +1,6 @@
 # Game-Saver
 
-![Alt Text](https://github.com/Nukesor/images/blob/master/game_saver.png)
+![Alt Text](https://github.com/Nukesor/images/blob/main/game_saver.png?raw=true)
 
 Game-Saver is a small utility which aims to provide multi-slot saves and auto-saving for games that don't provide it out of the box.
 
