@@ -39,6 +39,7 @@ pub enum InputType {
 }
 
 #[derive(Clone, Debug)]
+#[allow(dead_code)]
 pub enum PromptType {
     Rename {
         save: SaveFile,

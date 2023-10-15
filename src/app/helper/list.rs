@@ -145,7 +145,7 @@ where
             return;
         }
         let i = match self.get_state().selected() {
-            Some(i) if i == 0 => self.get_items().len() - 1,
+            Some(0) => self.get_items().len() - 1,
             Some(i) => i - 1,
             None => 0,
         };
