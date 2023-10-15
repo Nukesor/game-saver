@@ -223,6 +223,7 @@ fn handle_game_list(event: &KeyEvent, state: &mut AppState) -> Result<EventResul
     if let KeyEvent {
         modifiers: KeyModifiers::CONTROL,
         code: KeyCode::Char('l') | KeyCode::Right,
+        ..
     } = event
     {
         // Moving to the right moves focus to the save lists.
@@ -246,6 +247,7 @@ fn handle_autosave_list(event: &KeyEvent, state: &mut AppState) -> Result<EventR
         KeyEvent {
             modifiers: KeyModifiers::CONTROL,
             code: KeyCode::Down | KeyCode::Up | KeyCode::Char('j' | 'k'),
+            ..
         } => {
             // Moving up down while focus is on the autosave list should switch focus
             // to the manual save list.
@@ -256,6 +258,7 @@ fn handle_autosave_list(event: &KeyEvent, state: &mut AppState) -> Result<EventR
         KeyEvent {
             modifiers: KeyModifiers::CONTROL,
             code: KeyCode::Left | KeyCode::Char('h'),
+            ..
         } => {
             state.state = UiState::Games;
             return Ok(EventResult::Redraw);
@@ -314,6 +317,7 @@ fn handle_manual_save_list(event: &KeyEvent, state: &mut AppState) -> Result<Eve
         KeyEvent {
             modifiers: KeyModifiers::CONTROL,
             code: KeyCode::Down | KeyCode::Up | KeyCode::Char('j' | 'k'),
+            ..
         } => {
             // Moving up down while focus is on the manual save list should switch focus
             // to the autosave list. Only do this if autosaves are enabled.
@@ -326,6 +330,7 @@ fn handle_manual_save_list(event: &KeyEvent, state: &mut AppState) -> Result<Eve
         KeyEvent {
             modifiers: KeyModifiers::CONTROL,
             code: KeyCode::Left | KeyCode::Char('h'),
+            ..
         } => {
             state.state = UiState::Games;
             return Ok(EventResult::Redraw);
@@ -416,6 +421,7 @@ fn handle_exits(event: &KeyEvent, terminal: &mut Terminal) -> Result<EventResult
         KeyEvent {
             code: KeyCode::Char('c'),
             modifiers: KeyModifiers::CONTROL,
+            ..
         } => {
             // Classict CTRL+C should kill the program
             restore_terminal(terminal)?;
@@ -424,6 +430,7 @@ fn handle_exits(event: &KeyEvent, terminal: &mut Terminal) -> Result<EventResult
         KeyEvent {
             code: KeyCode::Char('q'),
             modifiers: KeyModifiers::NONE,
+            ..
         } => {
             // 'q' instantly exits the program.
             restore_terminal(terminal)?;
