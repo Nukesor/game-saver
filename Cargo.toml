@@ -12,24 +12,24 @@ edition = "2021"
 
 [dependencies]
 watchexec = "1"
-dirs = "4"
+dirs = "5"
 crossbeam-channel = "0.5"
-shellexpand = "2"
+shellexpand = "3"
 
 better-panic = "0.3"
 anyhow = "1"
 chrono = { version = "0.4", features = ["serde"] }
 chrono-english = "0.1"
 
-clap = { version = "3", features = ["derive", "cargo"] }
+clap = { version = "4", features = ["derive", "cargo"] }
 shell-escape = "0.1"
-tui = { version = "0.18", features = ["crossterm"] }
-crossterm = "0.23"
+tui = { version = "0.19", features = ["crossterm"] }
+crossterm = "0.27"
 log = "0.4"
-pretty_env_logger = "0.4"
+pretty_env_logger = "0.5"
 
 serde = "1"
-toml = "0.5"
+toml = "0.8"
 serde_derive = "1"
 
 [dev-dependencies]
