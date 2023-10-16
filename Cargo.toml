@@ -11,7 +11,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-watchexec = "1"
+watchexec = "2"
 dirs = "5"
 crossbeam-channel = "0.5"
 shellexpand = "3"
