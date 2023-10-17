@@ -1,8 +1,8 @@
 use anyhow::{Context, Result};
 use clap::Parser;
 use crossbeam_channel::unbounded;
+use flexi_logger::Logger;
 use log::{info, LevelFilter};
-use pretty_env_logger::formatted_builder;
 
 mod app;
 mod cli;
@@ -11,7 +11,8 @@ mod watcher;
 
 use config::Config;
 
-fn main() -> Result<()> {
+#[tokio::main(flavor = "multi_thread", worker_threads = 4)]
+async fn main() -> Result<()> {
     // Parse commandline options.
     let opt = cli::CliArguments::parse();
     init_app(opt.verbosity);
@@ -24,7 +25,9 @@ fn main() -> Result<()> {
 
     // Spawn all file-change watchers.
     info!("Spawning watchers");
-    watcher::spawn_watchers(&config, &sender).context("Failed while spawning watchers")?;
+    watcher::spawn_watchers(&config, &sender)
+        .await
+        .context("Failed while spawning watchers")?;
     info!("All watchers have been spawned, waiting for updates");
 
     // Run the actual main app.
@@ -45,7 +48,12 @@ fn init_app(verbosity: u8) {
         2 => LevelFilter::Info,
         _ => LevelFilter::Debug,
     };
-    let mut builder = formatted_builder();
-    builder.filter(None, level).init();
+
+    let log_info = format!("{}, watchexec=warn", level.to_string().to_lowercase());
+    Logger::try_with_str(log_info)
+        .expect("Failed to init logger")
+        .start()
+        .expect("Failed to start logger");
+
     info!("Initialized logger with verbosity {}", level);
 }

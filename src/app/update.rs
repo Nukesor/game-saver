@@ -3,6 +3,7 @@ use std::convert::TryInto;
 use anyhow::Result;
 use chrono::{Duration, Local};
 use crossbeam_channel::Receiver;
+use log::debug;
 
 use super::{saves::autosave_game, ui::state::AppState};
 use crate::watcher::Update;
@@ -30,6 +31,7 @@ pub fn handle_updates(state: &mut AppState, receiver: &Receiver<Update>) -> Resu
 /// If autosaves are enabled and no autosave-timeout is active schedule a save for the given game.
 pub fn receive_updates(state: &mut AppState, receiver: &Receiver<Update>) {
     while let Ok(update) = receiver.try_recv() {
+        debug!("Received update:\n{update:#?}");
         let game_config = state.config.games.get(&update.game_name).unwrap();
         if !game_config.has_autosaves() {
             continue;
