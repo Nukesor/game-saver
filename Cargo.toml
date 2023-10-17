@@ -7,30 +7,28 @@ homepage = "https://github.com/nukesor/game-saver"
 repository = "https://github.com/nukesor/game-saver"
 license = "MIT"
 edition = "2021"
-
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-watchexec = "1"
-dirs = "5"
-crossbeam-channel = "0.5"
-shellexpand = "3"
-
-better-panic = "0.3"
 anyhow = "1"
+better-panic = "0.3"
 chrono = { version = "0.4", features = ["serde"] }
 chrono-english = "0.1"
-
 clap = { version = "4", features = ["derive", "cargo"] }
-shell-escape = "0.1"
-tui = { version = "0.19", features = ["crossterm"] }
+crossbeam-channel = "0.5"
 crossterm = "0.27"
+dirs = "5"
+flexi_logger = "0.27"
 log = "0.4"
-pretty_env_logger = "0.5"
-
 serde = "1"
-toml = "0.8"
 serde_derive = "1"
+shell-escape = "0.1"
+shellexpand = "3"
+tokio = { version = "1", features = ["rt-multi-thread"] }
+toml = "0.8"
+tui = { version = "0.19", features = ["crossterm"] }
+watchexec = "2.3"
+watchexec-filterer-globset = "1.2"
 
 [dev-dependencies]
 pretty_assertions = "1"

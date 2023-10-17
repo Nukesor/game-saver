@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use crossbeam_channel::Receiver;
-use log::debug;
+use log::info;
 
 mod helper;
 mod saves;
@@ -27,12 +27,12 @@ use crate::{config::Config, watcher::Update};
 /// - Initialize terminal
 /// - Enter the Event->Update->Draw loop
 pub fn run(config: Config, receiver: Receiver<Update>) -> Result<()> {
-    debug!("Initializing directories");
+    info!("Initializing directories");
     init_directories(&config).context("Failed while initializing directories")?;
     // Create a new app with some example state
     let mut state = AppState::new(&config)?;
 
-    debug!("Initializing terminal");
+    info!("Initializing terminal");
     let mut terminal = helper::terminal::init_terminal()?;
 
     // One initial clear and draw
