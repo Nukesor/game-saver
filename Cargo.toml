@@ -27,8 +27,9 @@ shellexpand = "3"
 tokio = { version = "1", features = ["rt-multi-thread"] }
 toml = "0.8"
 tui = { version = "0.19", features = ["crossterm"] }
-watchexec = "2.3"
-watchexec-filterer-globset = "1.2"
+watchexec = "3"
+watchexec-filterer-globset = "2"
+watchexec-events = "1.1"
 
 [dev-dependencies]
 pretty_assertions = "1"

@@ -1,19 +1,13 @@
-use std::{path::PathBuf, sync::Arc};
+use std::path::PathBuf;
 
 use anyhow::{Context, Result};
 use chrono::{DateTime, Local};
 use crossbeam_channel::Sender;
 use log::{error, info};
-use watchexec::{
-    action::{Action, Outcome},
-    config::{InitConfig, RuntimeConfig},
-    error::CriticalError,
-    event::{
-        filekind::{FileEventKind, ModifyKind},
-        Tag,
-    },
-    handler::PrintDebug,
-    Watchexec,
+use watchexec::Watchexec;
+use watchexec_events::{
+    filekind::{FileEventKind, ModifyKind},
+    Tag,
 };
 use watchexec_filterer_globset::GlobsetFilterer;
 
@@ -48,8 +42,57 @@ async fn spawn_watcher(
     game_config: &GameConfig,
     sender: &Sender<Update>,
 ) -> Result<()> {
-    let mut init = InitConfig::default();
-    init.on_error(PrintDebug(std::io::stderr()));
+    let sender_clone = sender.clone();
+    let game_name_clone = game_name.to_string();
+    // Define the handler that's called if any changes are detected.
+    let watcher = Watchexec::new(move |action| {
+        // Only trigger on File event types that're interesting for us.
+        let mut should_trigger = false;
+        let mut locations = Vec::new();
+        for event in action.events.iter() {
+            let mut interesting_event = false;
+            for tag in &event.tags {
+                if let Tag::FileEventKind(fek) = tag {
+                    match fek {
+                        FileEventKind::Access(_) => continue,
+                        FileEventKind::Modify(ModifyKind::Name(_)) => interesting_event = true,
+                        FileEventKind::Modify(ModifyKind::Metadata(_)) => continue,
+                        FileEventKind::Modify(_) => interesting_event = true,
+                        FileEventKind::Create(_) => interesting_event = true,
+                        FileEventKind::Remove(_) => continue,
+                        _ => continue,
+                    };
+                }
+            }
+
+            // Handle all interesting events.
+            if interesting_event {
+                should_trigger = true;
+                event
+                    .paths()
+                    .for_each(|(path, _filetype)| locations.push(path.to_path_buf()))
+            }
+        }
+
+        // If anything interesting happened, notify the main program about it.
+        locations.dedup();
+        if should_trigger {
+            sender_clone
+                .send(Update {
+                    game_name: game_name_clone.clone(),
+                    locations,
+                    time: Local::now(),
+                })
+                .expect("Failed to send update.");
+        }
+
+        action
+    })?;
+
+    // Set the watched directory
+    watcher
+        .config
+        .pathset(vec![game_config.savegame_location()]);
 
     // Create the filter that enforces all ignored globs from the configuration file.
     let ignores: Vec<(String, Option<PathBuf>)> = game_config
@@ -63,72 +106,11 @@ async fn spawn_watcher(
         ignores,
         Vec::new(),
         Vec::new(),
-    );
-    let globset_filterer = globset_filterer
-        .await
-        .context("Failed to init globset filter for game {game_name}")?;
+    )
+    .await
+    .context("Failed to init globset filter for game {game_name}")?;
+    watcher.config.filterer.replace(globset_filterer);
 
-    // Initialize the runtime configuration for watchexec
-    let mut runtime = RuntimeConfig::default();
-    runtime
-        .pathset(vec![game_config.savegame_location()])
-        .filterer(Arc::new(globset_filterer));
-
-    // Define the handler that's called if any changes are detected.
-    let sender = sender.clone();
-    let game_name_clone = game_name.to_string();
-    runtime.on_action(move |action: Action| {
-        let sender_clone = sender.clone();
-        let game_name_clone = game_name_clone.clone();
-        async move {
-            // Only trigger on File event types that're interesting for us.
-            let mut should_trigger = false;
-            let mut locations = Vec::new();
-            for event in action.events.iter() {
-                let mut interesting_event = false;
-                for tag in &event.tags {
-                    if let Tag::FileEventKind(fek) = tag {
-                        match fek {
-                            FileEventKind::Access(_) => continue,
-                            FileEventKind::Modify(ModifyKind::Name(_)) => interesting_event = true,
-                            FileEventKind::Modify(ModifyKind::Metadata(_)) => continue,
-                            FileEventKind::Modify(_) => interesting_event = true,
-                            FileEventKind::Create(_) => interesting_event = true,
-                            FileEventKind::Remove(_) => continue,
-                            _ => continue,
-                        };
-                    }
-                }
-
-                // Handle all interesting events.
-                if interesting_event {
-                    should_trigger = true;
-                    event
-                        .paths()
-                        .for_each(|(path, _filetype)| locations.push(path.to_path_buf()))
-                }
-            }
-
-            // If anything interesting happened, notify the main program about it.
-            locations.dedup();
-            if should_trigger {
-                sender_clone
-                    .send(Update {
-                        game_name: game_name_clone,
-                        locations,
-                        time: Local::now(),
-                    })
-                    .expect("Failed to send update.");
-            }
-
-            action.outcome(Outcome::DoNothing);
-
-            Ok::<(), CriticalError>(())
-        }
-    });
-
-    // Init and spawn the watcher in new async task.
-    let watcher = Watchexec::new(init, runtime)?;
     let game_name_clone = game_name.to_string();
     tokio::spawn(async move {
         if let Err(err) = watcher.main().await {

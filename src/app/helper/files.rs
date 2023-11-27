@@ -97,7 +97,7 @@ pub fn get_archive_files(path: &Path) -> Result<Vec<SaveFile>> {
 pub fn init_directories(config: &Config) -> Result<()> {
     let backup_dir = config.backup_directory();
     // Create the backup directory
-    create_dir_all(&backup_dir).context("Failed to create backup directory")?;
+    create_dir_all(backup_dir).context("Failed to create backup directory")?;
 
     // Create subfolders for each game
     for (name, game_config) in &config.games {
