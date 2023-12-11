@@ -29,7 +29,7 @@ toml = "0.8"
 tui = { version = "0.19", features = ["crossterm"] }
 watchexec = "3"
 watchexec-filterer-globset = "2"
-watchexec-events = "1.1"
+watchexec-events = "2.0"
 
 [dev-dependencies]
 pretty_assertions = "1"
