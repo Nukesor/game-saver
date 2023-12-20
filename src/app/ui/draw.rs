@@ -1,8 +1,5 @@
-use std::io::Stdout;
-
 use anyhow::Result;
-use tui::{
-    backend::CrosstermBackend,
+use ratatui::{
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::Text,
@@ -13,7 +10,7 @@ use tui::{
 use super::state::{AppState, PromptType, UiState};
 use crate::app::helper::terminal::Terminal;
 
-type Frame<'backend> = TuiFrame<'backend, CrosstermBackend<Stdout>>;
+type Frame<'backend> = TuiFrame<'backend>;
 
 /// Draw the terminal ui.
 /// This function doesn't change any state. Its sole purpose is to take the current state and
