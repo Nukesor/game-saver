@@ -14,6 +14,7 @@ use crate::app::{
 };
 
 /// This enum signals the parent function, which actions should be taken.
+#[derive(Debug)]
 pub enum EventResult {
     /// The event has been handled and we should redraw the window
     Redraw,
@@ -48,6 +49,16 @@ fn handle_key(
     terminal: &mut Terminal,
     state: &mut AppState,
 ) -> Result<EventResult> {
+    // Handle ui independant actions
+    if let KeyEvent {
+        modifiers: KeyModifiers::CONTROL,
+        code: KeyCode::Char('q') | KeyCode::Char('c'),
+        ..
+    } = event
+    {
+        return Ok(EventResult::Quit);
+    }
+
     let current_ui_state = state.get_state();
 
     // Run through strictly state-specific handlers.
