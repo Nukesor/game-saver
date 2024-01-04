@@ -15,6 +15,7 @@ better-panic = "0.3"
 chrono = { version = "0.4", features = ["serde"] }
 chrono-english = "0.1"
 clap = { version = "4", features = ["derive", "cargo"] }
+ctrlc = { version = "3", features = ["termination"] }
 crossbeam-channel = "0.5"
 crossterm = "0.27"
 dirs = "5"

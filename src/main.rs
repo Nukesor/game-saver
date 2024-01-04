@@ -41,6 +41,14 @@ fn init_app(verbosity: u8) {
     // Beautify panics for better debug output.
     better_panic::install();
 
+    // This section handles Shutdown via SigTerm/SigInt process signals
+    // Notify the TaskHandler, so it can shutdown gracefully.
+    // The actual program exit will be done via the TaskHandler.
+    ctrlc::set_handler(move || {
+        std::process::exit(1);
+    })
+    .expect("Failed to set signal handler");
+
     // Set the verbosity level and initialize the logger.
     let level = match verbosity {
         0 => LevelFilter::Error,
