@@ -27,7 +27,7 @@ shell-escape = "0.1"
 shellexpand = "3"
 tokio = { version = "1", features = ["rt-multi-thread"] }
 toml = "0.8"
-ratatui = { version = "0.25", features = ["crossterm"] }
+ratatui = { version = "0.26", features = ["crossterm"] }
 watchexec = "3"
 watchexec-filterer-globset = "3"
 watchexec-events = "2.0"
