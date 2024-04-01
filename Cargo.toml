@@ -18,7 +18,7 @@ ctrlc = { version = "3", features = ["termination"] }
 crossbeam-channel = "0.5"
 crossterm = "0.27"
 dirs = "5"
-flexi_logger = "0.27"
+flexi_logger = "0.28"
 log = "0.4"
 serde = "1"
 serde_derive = "1"
