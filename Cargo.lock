@@ -1564,18 +1564,18 @@ checksum = "94143f37725109f92c262ed2cf5e59bce7498c01bcc1502d7b9afe439a4e9f49"
 
 [[package]]
 name = "serde"
-version = "1.0.199"
+version = "1.0.200"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "0c9f6e76df036c77cd94996771fb40db98187f096dd0b9af39c6c6e452ba966a"
+checksum = "ddc6f9cc94d67c0e21aaf7eda3a010fd3af78ebf6e096aa6e2e13c79749cce4f"
 dependencies = [
  "serde_derive",
 ]
 
 [[package]]
 name = "serde_derive"
-version = "1.0.199"
+version = "1.0.200"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "11bd257a6541e141e42ca6d24ae26f7714887b47e89aa739099104c7e4d3b7fc"
+checksum = "856f046b9400cee3c8c94ed572ecdb752444c24528c035cd35882aad6f492bcb"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2008,9 +2008,9 @@ checksum = "af190c94f2773fdb3729c55b007a722abb5384da03bc0986df4c289bf5567e96"
 
 [[package]]
 name = "watchexec"
-version = "4.0.0"
+version = "4.1.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "dd83b1c4960986826c5aab0f437ffef455fddd7cb46b3948503d584284c44602"
+checksum = "c635816bdb583dcd1cf58935899df38b5c5ffb1b9d0cc89f8d3c7b33e2c005e3"
 dependencies = [
  "async-priority-channel",
  "async-recursion",
@@ -2045,9 +2045,9 @@ dependencies = [
 
 [[package]]
 name = "watchexec-filterer-globset"
-version = "4.0.0"
+version = "4.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "402c8af687eaa485d7e5c58706c1abf4ee78af6eacf63aa91140ed2c7fce5847"
+checksum = "81eed8a2a5eb745a8be2f28950a920595e470742623d10adb9e3c55cda245165"
 dependencies = [
  "ignore",
  "ignore-files",
@@ -2059,9 +2059,9 @@ dependencies = [
 
 [[package]]
 name = "watchexec-filterer-ignore"
-version = "4.0.0"
+version = "4.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "33c16c511152908dc626e843b26622ed65800b7600c0aae2756aea8a38b8d2e8"
+checksum = "61e173d1c66a46405e1bb9c925974380da9ee3bd90bd12a94ecf1a22997f5482"
 dependencies = [
  "dunce",
  "ignore",
