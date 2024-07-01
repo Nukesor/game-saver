@@ -25,7 +25,7 @@ serde_derive = "1"
 shellexpand = "3"
 tokio = { version = "1", features = ["rt-multi-thread"] }
 toml = "0.8"
-ratatui = { version = "0.26", features = ["crossterm"] }
+ratatui = { version = "0.27", features = ["crossterm"] }
 watchexec = "4"
 watchexec-filterer-globset = "4"
 watchexec-events = "3.0"
