@@ -17,6 +17,7 @@ use crate::config::{Config, GameConfig};
 #[derive(Debug)]
 pub struct Update {
     pub game_name: String,
+    #[allow(dead_code)]
     pub locations: Vec<PathBuf>,
     pub time: DateTime<Local>,
 }
