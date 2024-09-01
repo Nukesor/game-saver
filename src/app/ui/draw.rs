@@ -23,7 +23,7 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
         let main_chunks = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([Constraint::Ratio(1, 3), Constraint::Ratio(2, 3)].as_ref())
-            .split(frame.size());
+            .split(frame.area());
 
         // Draw the list of games
         let game_list = build_list(state.games.items.clone(), "Games", true);
@@ -152,7 +152,7 @@ fn get_modal(frame: &mut Frame) -> Rect {
             ]
             .as_ref(),
         )
-        .split(frame.size());
+        .split(frame.area());
 
     // Get the horizontal middle of the screen.
     let overlay_horizontal = Layout::default()
