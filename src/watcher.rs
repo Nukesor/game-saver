@@ -107,6 +107,7 @@ async fn spawn_watcher(
         ignores,
         Vec::new(),
         Vec::new(),
+        Vec::new(),
     )
     .await
     .context("Failed to init globset filter for game {game_name}")?;
