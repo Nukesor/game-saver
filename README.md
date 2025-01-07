@@ -7,6 +7,9 @@ Game-Saver is a small utility which aims to provide multi-slot saves and auto-sa
 The goal is to enable users to easily save and restore multiple versions of a savegame folder.
 This tool is designed to extend a game's save logic and not to replace it.
 
+This project is mostly used by myself. You may also use it if you like.
+However, I don't plan to provide proper support for this project as I do for my other projects.
+
 ### Features:
 
 - Create new saves on-demand.
@@ -14,7 +17,6 @@ This tool is designed to extend a game's save logic and not to replace it.
 - Restore saves
 - Support for multiple games.
 - Rename and delete saves
-
 
 ### How to use
 
@@ -32,13 +34,12 @@ This tool is designed to extend a game's save logic and not to replace it.
 
 1. Install the Rust toolchain, `stable` is ensured to work.
 2. Clone and install the game:
-    ```sh
-    git clone git@github.com:Nukesor/game-saver.git
-    cd game-saver
-    cargo install --locked --path .
-    ```
+   ```sh
+   git clone git@github.com:Nukesor/game-saver.git
+   cd game-saver
+   cargo install --locked --path .
+   ```
 3. Either copy the binary in `~/.cargo/bin/` somewhere your executable live, or add it to your `$PATH`.
-
 
 ### TODOS:
 
