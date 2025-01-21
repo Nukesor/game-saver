@@ -17,7 +17,7 @@ clap = { version = "4", features = ["derive", "cargo"] }
 ctrlc = { version = "3", features = ["termination"] }
 crossbeam-channel = "0.5"
 crossterm = "0.28"
-dirs = "5"
+dirs = "6"
 flexi_logger = "0.29"
 log = "0.4"
 serde = "1"
