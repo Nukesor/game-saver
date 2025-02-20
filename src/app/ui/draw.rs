@@ -1,10 +1,10 @@
 use anyhow::Result;
 use ratatui::{
+    Frame as TuiFrame,
     layout::{Constraint, Direction, Layout, Rect},
     style::{Color, Modifier, Style},
     text::Text,
     widgets::{Block, Borders, Clear, List, ListItem, Paragraph},
-    Frame as TuiFrame,
 };
 
 use super::state::{AppState, PromptType, UiState};

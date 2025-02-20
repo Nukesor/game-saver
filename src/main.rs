@@ -2,7 +2,7 @@ use anyhow::{Context, Result};
 use clap::Parser;
 use crossbeam_channel::unbounded;
 use flexi_logger::Logger;
-use log::{info, LevelFilter};
+use log::{LevelFilter, info};
 
 mod app;
 mod cli;

@@ -6,8 +6,8 @@ use crossbeam_channel::Sender;
 use log::{error, info};
 use watchexec::Watchexec;
 use watchexec_events::{
-    filekind::{FileEventKind, ModifyKind},
     Tag,
+    filekind::{FileEventKind, ModifyKind},
 };
 use watchexec_filterer_globset::GlobsetFilterer;
 

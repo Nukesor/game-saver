@@ -6,8 +6,7 @@ authors = ["Arne Beer <contact@arne.beer>"]
 homepage = "https://github.com/nukesor/game-saver"
 repository = "https://github.com/nukesor/game-saver"
 license = "MIT"
-edition = "2021"
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+edition = "2024"
 
 [dependencies]
 anyhow = "1"

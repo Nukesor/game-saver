@@ -10,11 +10,11 @@ mod update;
 use self::{
     helper::{
         files::init_directories,
-        terminal::{restore_terminal, Terminal},
+        terminal::{Terminal, restore_terminal},
     },
     ui::{
         draw::draw_ui,
-        events::{handle_events, EventResult},
+        events::{EventResult, handle_events},
         state::AppState,
     },
     update::handle_updates,

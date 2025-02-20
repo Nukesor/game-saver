@@ -1,14 +1,14 @@
 use std::time::Duration;
 
-use anyhow::{bail, Result};
+use anyhow::{Result, bail};
 use chrono::Local;
-use crossterm::event::{poll, read, Event, KeyCode, KeyEvent, KeyModifiers};
+use crossterm::event::{Event, KeyCode, KeyEvent, KeyModifiers, poll, read};
 
 use super::state::{AppState, Input, InputType, PromptType, UiState};
 use crate::app::{
     helper::{
         list::Navigate,
-        terminal::{restore_terminal, Terminal},
+        terminal::{Terminal, restore_terminal},
     },
     saves::{delete_save, manually_save_game, rename_save, restore_save},
 };
