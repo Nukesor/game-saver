@@ -15,9 +15,9 @@ chrono = { version = "0.4", features = ["serde"] }
 clap = { version = "4", features = ["derive", "cargo"] }
 ctrlc = { version = "3", features = ["termination"] }
 crossbeam-channel = "0.5"
-crossterm = "0.28"
+crossterm = "0.29"
 dirs = "6"
-flexi_logger = "0.29"
+flexi_logger = "0.30"
 log = "0.4"
 serde = "1"
 serde_derive = "1"
