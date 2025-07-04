@@ -63,5 +63,5 @@ fn init_app(verbosity: u8) {
         .start()
         .expect("Failed to start logger");
 
-    info!("Initialized logger with verbosity {}", level);
+    info!("Initialized logger with verbosity {level}");
 }

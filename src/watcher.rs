@@ -26,10 +26,10 @@ pub struct Update {
 pub async fn spawn_watchers(config: &Config, sender: &Sender<Update>) -> Result<()> {
     for (name, game_config) in &config.games {
         if !game_config.savegame_location().exists() {
-            error!("Cannot find savegame_location for game {}", name);
+            error!("Cannot find savegame_location for game {name}");
             continue;
         }
-        info!("Building watcher for {}", name);
+        info!("Building watcher for {name}");
         spawn_watcher(name, game_config, sender).await?;
     }
 
@@ -121,7 +121,7 @@ async fn spawn_watcher(
 
         println!("Exiting file watcher worker for {game_name_clone}");
     });
-    info!("Spawned watcher thread for {}", game_name);
+    info!("Spawned watcher thread for {game_name}");
 
     Ok(())
 }
