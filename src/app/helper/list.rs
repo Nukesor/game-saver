@@ -107,11 +107,10 @@ where
 {
     fn focus(&mut self) {
         // Don't change state, if it's valid
-        if let Some(selected) = self.get_state().selected() {
-            if self.get_items().len() > selected {
+        if let Some(selected) = self.get_state().selected()
+            && self.get_items().len() > selected {
                 return;
             }
-        }
 
         self.autoselect_first()
     }

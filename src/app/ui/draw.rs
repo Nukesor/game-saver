@@ -115,7 +115,7 @@ pub fn draw_ui(terminal: &mut Terminal, state: &mut AppState) -> Result<()> {
     Ok(())
 }
 
-fn build_list(items: Vec<String>, title: &str, highlight: bool) -> List {
+fn build_list(items: Vec<String>, title: &str, highlight: bool) -> List<'_> {
     // Create the game selection.
     let items: Vec<ListItem> = items.into_iter().map(ListItem::new).collect();
 
@@ -173,7 +173,7 @@ fn get_modal(frame: &mut Frame) -> Rect {
     overlay_horizontal[1]
 }
 
-fn get_prompt_text(prompt_type: &PromptType, game: String) -> Text {
+fn get_prompt_text(prompt_type: &PromptType, game: String) -> Text<'_> {
     let message = match prompt_type {
         PromptType::Delete { save } => {
             format!(
