@@ -761,7 +761,6 @@ dependencies = [
  "pretty_assertions",
  "ratatui",
  "serde",
- "serde_derive",
  "shellexpand",
  "tokio",
  "toml",

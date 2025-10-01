@@ -1,7 +1,7 @@
 use std::{collections::HashMap, fs::File, io::prelude::*, path::PathBuf};
 
 use anyhow::{Context, Result};
-use serde_derive::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize};
 use shellexpand::tilde;
 
 static DEFAULT_CONFIG: &str = include_str!("../example_game_saver.toml");
