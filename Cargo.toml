@@ -22,7 +22,7 @@ log = "0.4"
 serde = { version = "1", features = ["derive"] }
 shellexpand = "3"
 tokio = { version = "1", features = ["rt-multi-thread"] }
-toml = "1.0"
+toml = "1.1"
 ratatui = { version = "0.30", features = ["crossterm"] }
 watchexec = "8"
 watchexec-filterer-globset = "8"
