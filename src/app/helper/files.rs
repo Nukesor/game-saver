@@ -88,7 +88,7 @@ pub fn get_archive_files(path: &Path) -> Result<Vec<SaveFile>> {
     }
 
     // Sort by descending order -> b.cmp(a)
-    files.sort_by(|a, b| b.last_modified.cmp(&a.last_modified));
+    files.sort_by_key(|b| std::cmp::Reverse(b.last_modified));
 
     Ok(files)
 }
